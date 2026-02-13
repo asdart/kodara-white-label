@@ -1,1 +1,9 @@
-Error getting image
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 157 156" fill="none">
+  <defs>
+    <radialGradient id="glow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(78.5 78) rotate(90) scale(78 78.5)">
+      <stop stop-color="#00AFD0" stop-opacity="0.2" />
+      <stop offset="1" stop-color="white" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+  <ellipse cx="78.5" cy="78" rx="78.5" ry="78" fill="url(#glow)" />
+</svg>

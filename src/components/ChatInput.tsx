@@ -4,6 +4,9 @@ import { PlusIcon, ArrowUpIcon, SparkleSmallIcon, FilePlusIcon, ImageIcon } from
 
 interface ChatInputProps {
   disabled?: boolean;
+  onTextChange?: (text: string) => void;
+  onSubmit?: (text: string) => void;
+  placeholder?: string;
 }
 
 // 4 lines max: line-height is 20px (--body-3-line)
@@ -11,7 +14,7 @@ const MAX_LINES = 4;
 const LINE_HEIGHT = 20;
 const MAX_TEXTAREA_HEIGHT = MAX_LINES * LINE_HEIGHT;
 
-export default function ChatInput({ disabled = false }: ChatInputProps) {
+export default function ChatInput({ disabled = false, onTextChange, onSubmit, placeholder = "How can I help you today?" }: ChatInputProps) {
   const [hasText, setHasText] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [closing, setClosing] = useState(false);
@@ -42,8 +45,10 @@ export default function ChatInput({ disabled = false }: ChatInputProps) {
   const updateDropdownPosition = useCallback(() => {
     if (plusBtnRef.current) {
       const rect = plusBtnRef.current.getBoundingClientRect();
+      // Open above the button so it doesn't clip at the bottom of the page
+      const dropdownHeight = 80; // 2 items × 32px + 8px padding + border
       setDropdownPosition({
-        top: rect.bottom + 6,
+        top: rect.top - dropdownHeight - 6,
         left: rect.left,
       });
     }
@@ -68,6 +73,30 @@ export default function ChatInput({ disabled = false }: ChatInputProps) {
       setClosing(false);
     }
   };
+
+  const handleSubmit = useCallback(() => {
+    const el = textareaRef.current;
+    if (!el || !el.value.trim() || disabled) return;
+    const text = el.value.trim();
+    onSubmit?.(text);
+    el.value = '';
+    setHasText(false);
+    onTextChange?.('');
+    // Reset height
+    el.style.transition = 'none';
+    el.style.height = 'auto';
+    el.style.overflowY = 'hidden';
+  }, [disabled, onSubmit, onTextChange]);
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        handleSubmit();
+      }
+    },
+    [handleSubmit],
+  );
 
   // Close on click outside
   useEffect(() => {
@@ -132,12 +161,15 @@ export default function ChatInput({ disabled = false }: ChatInputProps) {
       <div className="flex flex-col gap-[12px] items-start w-full">
         <textarea
           ref={textareaRef}
-          placeholder="How can I help you today?"
+          placeholder={placeholder}
           rows={1}
           disabled={disabled}
+          onKeyDown={handleKeyDown}
           onInput={(e) => {
             autoResize();
-            setHasText((e.target as HTMLTextAreaElement).value.length > 0);
+            const value = (e.target as HTMLTextAreaElement).value;
+            setHasText(value.length > 0);
+            onTextChange?.(value);
           }}
           className="w-full resize-none outline-none bg-transparent"
           style={{
@@ -180,13 +212,15 @@ export default function ChatInput({ disabled = false }: ChatInputProps) {
             createPortal(
               <div
                 ref={dropdownRef}
-                className={`plus-dropdown fixed z-[9999] ${closing ? 'closing' : ''}`}
+                className={`plus-dropdown fixed z-[9999] flex flex-col gap-1 ${closing ? 'closing' : ''}`}
                 style={{
                   top: dropdownPosition.top,
                   left: dropdownPosition.left,
                   width: '144px',
                   paddingTop: '4px',
                   paddingBottom: '4px',
+                  paddingLeft: '4px',
+                  paddingRight: '4px',
                   borderRadius: '12px',
                   background: 'var(--alpha-dark-600)',
                   backdropFilter: 'blur(4px)',
@@ -201,10 +235,9 @@ export default function ChatInput({ disabled = false }: ChatInputProps) {
                 onClick={() => closeDropdown()}
                 style={{
                   height: '32px',
-                  padding: '0 4px',
-                  background: 'none',
+                  padding: '0',
                   border: 'none',
-                  borderRadius: '5px',
+                  borderRadius: '8px',
                   cursor: 'pointer',
                 }}
               >
@@ -214,8 +247,8 @@ export default function ChatInput({ disabled = false }: ChatInputProps) {
                     gap: '6px',
                     paddingLeft: '6px',
                     paddingRight: '8px',
-                    paddingTop: '8px',
-                    paddingBottom: '8px',
+                    paddingTop: '6px',
+                    paddingBottom: '6px',
                     borderRadius: '8px',
                   }}
                 >
@@ -243,10 +276,9 @@ export default function ChatInput({ disabled = false }: ChatInputProps) {
                 onClick={() => closeDropdown()}
                 style={{
                   height: '32px',
-                  padding: '0 4px',
-                  background: 'none',
+                  padding: '0',
                   border: 'none',
-                  borderRadius: '5px',
+                  borderRadius: '8px',
                   cursor: 'pointer',
                 }}
               >
@@ -256,8 +288,8 @@ export default function ChatInput({ disabled = false }: ChatInputProps) {
                     gap: '6px',
                     paddingLeft: '6px',
                     paddingRight: '8px',
-                    paddingTop: '8px',
-                    paddingBottom: '8px',
+                    paddingTop: '6px',
+                    paddingBottom: '6px',
                     borderRadius: '8px',
                   }}
                 >
@@ -312,7 +344,7 @@ export default function ChatInput({ disabled = false }: ChatInputProps) {
         </div>
 
         {/* Send button */}
-        <button className="send-btn" disabled={disabled}>
+        <button className="send-btn" disabled={disabled} onClick={handleSubmit}>
           <span className="send-btn-gradient" aria-hidden />
           <ArrowUpIcon
             className="w-5 h-5 relative z-10"

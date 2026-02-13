@@ -1,9 +1,11 @@
 import { PenSparkleIcon, MyTasksIcon, SettingsIcon, SidebarCollapseIcon } from './Icons';
 
-// Avatar image from Figma
-const avatarUrl = "http://localhost:3845/assets/12ead654b63cf78651bddf6ac6ee9ce34b82f96b.png";
+interface SidebarProps {
+  currentPage?: 'home' | 'chats' | 'chat';
+  onNavigate?: (page: 'home' | 'chats') => void;
+}
 
-export default function Sidebar() {
+export default function Sidebar({ currentPage = 'home', onNavigate }: SidebarProps) {
   return (
     <div
       className="flex items-center h-full shrink-0"
@@ -50,17 +52,7 @@ export default function Sidebar() {
                     borderRadius: 'var(--radius-full)',
                     background: 'linear-gradient(135deg, #0ea5e9, #06b6d4)',
                   }}
-                >
-                  <img
-                    src={avatarUrl}
-                    alt="User avatar"
-                    className="w-full h-full object-cover"
-                    style={{ borderRadius: 'var(--radius-full)' }}
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = 'none';
-                    }}
-                  />
-                </div>
+                />
                 <span
                   className="font-medium whitespace-nowrap"
                   style={{
@@ -91,13 +83,13 @@ export default function Sidebar() {
           className="flex flex-col items-start shrink-0 w-full min-w-0 overflow-hidden"
           style={{ paddingTop: '8px', paddingBottom: '8px' }}
         >
-          {/* New task */}
+          {/* New chat */}
           <div
             className="flex items-center w-full min-w-0"
             style={{ height: '32px', paddingLeft: '8px', paddingRight: '8px' }}
           >
             <div
-              className="flex items-center flex-1 h-full cursor-pointer hover:bg-black/[0.03] transition-colors"
+              className={`sidebar-nav-item flex items-center flex-1 h-full cursor-pointer${currentPage === 'home' || currentPage === 'chat' ? ' active' : ''}`}
               style={{
                 gap: '6px',
                 paddingLeft: '8px',
@@ -105,9 +97,11 @@ export default function Sidebar() {
                 paddingTop: '8px',
                 paddingBottom: '8px',
                 borderRadius: '8px',
+                background: currentPage === 'home' || currentPage === 'chat' ? 'rgba(0, 0, 0, 0.03)' : undefined,
               }}
+              onClick={() => onNavigate?.('home')}
             >
-              <PenSparkleIcon className="w-5 h-5 shrink-0" color="var(--alpha-light-600)" />
+              <PenSparkleIcon className="w-5 h-5 shrink-0" color="var(--nav-item-color)" />
               <span
                 className="font-medium truncate flex-1 min-w-0 overflow-hidden"
                 style={{
@@ -115,7 +109,7 @@ export default function Sidebar() {
                   fontSize: 'var(--body-3-size)',
                   lineHeight: 'var(--body-3-line)',
                   letterSpacing: 'var(--body-3-spacing)',
-                  color: 'var(--alpha-light-600)',
+                  color: 'var(--nav-item-color)',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
                 }}
@@ -125,13 +119,13 @@ export default function Sidebar() {
             </div>
           </div>
 
-          {/* My tasks */}
+          {/* My chats */}
           <div
             className="flex items-center w-full min-w-0"
             style={{ height: '32px', paddingLeft: '8px', paddingRight: '8px' }}
           >
             <div
-              className="flex items-center flex-1 h-full cursor-pointer hover:bg-black/[0.03] transition-colors"
+              className={`sidebar-nav-item flex items-center flex-1 h-full cursor-pointer${currentPage === 'chats' ? ' active' : ''}`}
               style={{
                 gap: '6px',
                 paddingLeft: '8px',
@@ -139,9 +133,11 @@ export default function Sidebar() {
                 paddingTop: '8px',
                 paddingBottom: '8px',
                 borderRadius: '8px',
+                background: currentPage === 'chats' ? 'rgba(0, 0, 0, 0.03)' : undefined,
               }}
+              onClick={() => onNavigate?.('chats')}
             >
-              <MyTasksIcon className="w-5 h-5 shrink-0" color="var(--alpha-light-600)" />
+              <MyTasksIcon className="w-5 h-5 shrink-0" color="var(--nav-item-color)" />
               <span
                 className="font-medium truncate flex-1 min-w-0 overflow-hidden"
                 style={{
@@ -149,7 +145,7 @@ export default function Sidebar() {
                   fontSize: 'var(--body-3-size)',
                   lineHeight: 'var(--body-3-line)',
                   letterSpacing: 'var(--body-3-spacing)',
-                  color: 'var(--alpha-light-600)',
+                  color: 'var(--nav-item-color)',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
                 }}
@@ -166,8 +162,6 @@ export default function Sidebar() {
           style={{
             paddingBottom: '12px',
             paddingTop: '8px',
-            paddingLeft: '8px',
-            paddingRight: '8px',
           }}
         >
           <div
@@ -175,7 +169,7 @@ export default function Sidebar() {
             style={{ height: '32px', paddingLeft: '8px', paddingRight: '8px' }}
           >
             <div
-              className="flex items-center flex-1 h-full cursor-pointer hover:bg-black/[0.03] transition-colors"
+              className="sidebar-nav-item flex items-center flex-1 h-full cursor-pointer"
               style={{
                 gap: '6px',
                 paddingLeft: '8px',
@@ -185,7 +179,7 @@ export default function Sidebar() {
                 borderRadius: '8px',
               }}
             >
-              <SettingsIcon className="w-5 h-5 shrink-0" color="var(--alpha-light-600)" />
+              <SettingsIcon className="w-5 h-5 shrink-0" color="var(--nav-item-color)" />
               <span
                 className="font-medium truncate flex-1 min-w-0 overflow-hidden"
                 style={{
@@ -193,7 +187,7 @@ export default function Sidebar() {
                   fontSize: 'var(--body-3-size)',
                   lineHeight: 'var(--body-3-line)',
                   letterSpacing: 'var(--body-3-spacing)',
-                  color: 'var(--alpha-light-600)',
+                  color: 'var(--nav-item-color)',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
                 }}

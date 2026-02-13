@@ -1,1 +1,10 @@
-Error getting image
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 46 46" fill="none">
+  <defs>
+    <linearGradient id="ring-gradient" x1="0" y1="0" x2="46" y2="46" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="rgba(14, 165, 233, 0.25)" />
+      <stop offset="50%" stop-color="rgba(0, 190, 220, 0.15)" />
+      <stop offset="100%" stop-color="rgba(6, 182, 212, 0.25)" />
+    </linearGradient>
+  </defs>
+  <circle cx="23" cy="23" r="22" stroke="url(#ring-gradient)" stroke-width="1.5" fill="none" />
+</svg>
