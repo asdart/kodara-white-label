@@ -1,0 +1,231 @@
+@import "tailwindcss";
+
+:root {
+  /* ── Figma Color Tokens ── */
+
+  /* Base colors */
+  --color-white: #ffffff;
+  --color-pelorous-50: #b7f1ff;
+  --color-pelorous-600: #008ba7;
+  --color-neutral-50: #fafafa;
+  --color-neutral-600: #525252;
+
+  /* Alpha / Light  (base #1a1a1a) */
+  --alpha-light-50: rgba(26, 26, 26, 0.06);    /* #1a1a1a0f */
+  --alpha-light-100: rgba(26, 26, 26, 0.09);   /* #1a1a1a17 */
+  --alpha-light-200: rgba(26, 26, 26, 0.2);    /* #1a1a1a33 */
+  --alpha-light-300: rgba(26, 26, 26, 0.28);   /* #1a1a1a47 */
+  --alpha-light-400: rgba(26, 26, 26, 0.36);   /* #1a1a1a5c */
+  --alpha-light-600: rgba(26, 26, 26, 0.6);    /* #1a1a1a99 */
+  --alpha-light-900: rgba(26, 26, 26, 0.8);    /* #1a1a1acc */
+
+  /* Alpha / Dark  (base #ffffff) */
+  --alpha-dark-100: rgba(255, 255, 255, 0.09);  /* #ffffff17 */
+  --alpha-dark-300: rgba(255, 255, 255, 0.28);  /* #ffffff47 */
+  --alpha-dark-600: rgba(255, 255, 255, 0.6);   /* #ffffff99 */
+  --alpha-dark-800: rgba(255, 255, 255, 0.75);  /* #ffffffbf */
+  --alpha-dark-900: rgba(255, 255, 255, 0.8);   /* #ffffffcc */
+
+  /* Alpha / Pelorous  (base #00afd0) */
+  --alpha-pelorous-50: rgba(0, 175, 208, 0.06);  /* #00afd00f */
+  --alpha-pelorous-200: rgba(0, 175, 208, 0.2);  /* #00afd033 */
+
+  /* ── Figma Typography Tokens ── */
+  --font-primary: 'Instrument Sans', sans-serif;
+  --weight-regular: 400;
+  --weight-medium: 500;
+
+  --body-3-size: 14px;
+  --body-3-line: 20px;
+  --body-3-spacing: -0.15px;
+
+  --body-4-size: 12px;
+  --body-4-line: 16px;
+
+  --heading-h4-size: 32px;
+  --heading-h4-line: 40px;
+  --heading-h1-spacing: -0.5px;
+
+  /* ── Figma Radius Tokens ── */
+  --radius-full: 999px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  font-family: var(--font-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Chat input states ── */
+.chat-input {
+  background: var(--color-white);
+  border: 1px solid var(--alpha-light-100);
+  box-shadow:
+    0px 0px 0px 0px transparent,
+    0px 22px 6px 0px rgba(0,0,0,0),
+    0px 14px 6px 0px rgba(0,0,0,0),
+    0px 8px 5px 0px rgba(0,0,0,0.01),
+    0px 4px 4px 0px rgba(0,0,0,0.02),
+    0px 1px 2px 0px rgba(0,0,0,0.02);
+  transition:
+    border-color 200ms ease-out,
+    box-shadow 200ms ease-out,
+    background 200ms ease-out;
+}
+
+/* Hover */
+.chat-input:hover {
+  border-color: var(--alpha-light-400);
+}
+
+/* Click / Focus */
+.chat-input:focus-within {
+  border-color: var(--alpha-light-600);
+  box-shadow:
+    0px 0px 0px 2px var(--alpha-light-50),
+    0px 22px 6px 0px rgba(0,0,0,0),
+    0px 14px 6px 0px rgba(0,0,0,0),
+    0px 8px 5px 0px rgba(0,0,0,0.01),
+    0px 4px 4px 0px rgba(0,0,0,0.02),
+    0px 1px 2px 0px rgba(0,0,0,0.02);
+}
+
+/* Disabled */
+.chat-input.is-disabled {
+  background: var(--color-neutral-50);
+  border-color: var(--alpha-light-100);
+  cursor: not-allowed;
+  box-shadow:
+    0px 0px 0px 0px transparent,
+    0px 22px 6px 0px rgba(0,0,0,0),
+    0px 14px 6px 0px rgba(0,0,0,0),
+    0px 8px 5px 0px rgba(0,0,0,0.01),
+    0px 4px 4px 0px rgba(0,0,0,0.02),
+    0px 1px 2px 0px rgba(0,0,0,0.02);
+}
+
+.chat-input.is-disabled:hover {
+  border-color: var(--alpha-light-100);
+}
+
+/* ── Send button states ── */
+.send-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  border: none;
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  cursor: pointer;
+  background: var(--color-white);
+  box-shadow: 0px 2px 1px -1px rgba(0,0,0,0.08);
+  transition: box-shadow 300ms cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+/* Gradient overlay — fade opacity for smooth state transitions */
+.send-btn-gradient {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(255,255,255,0) 0%, var(--alpha-light-200) 100%);
+  opacity: 1;
+  transition: opacity 300ms cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+/* Inset shadow overlay */
+.send-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: inset 0px 0px 3px 0px var(--alpha-light-300);
+  transition: box-shadow 300ms cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+.send-btn svg {
+  transition: stroke 300ms cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+/* Hover — gradient fades lighter */
+.send-btn:hover:not(:disabled) .send-btn-gradient {
+  opacity: 0.45;
+}
+
+/* Click / Active — gradient back, inset shadow softens */
+.send-btn:active:not(:disabled) .send-btn-gradient {
+  opacity: 1;
+}
+.send-btn:active:not(:disabled)::after {
+  box-shadow: inset 0px 0px 3px 0px var(--alpha-light-50);
+}
+
+/* Disabled — lighter gradient, faded */
+.send-btn:disabled {
+  cursor: not-allowed;
+}
+.send-btn:disabled .send-btn-gradient {
+  opacity: 0.45;
+}
+
+/* Suggestion card – default → hover transition */
+.suggestion-card {
+  background: var(--alpha-dark-300);
+  border: 1px solid var(--alpha-light-50);
+  transition: background 300ms ease-out, border-color 300ms ease-out;
+}
+
+.suggestion-card:hover {
+  background: var(--alpha-dark-900);
+  border-color: var(--alpha-light-100);
+}
+
+/* ── Plus-button dropdown ── */
+@keyframes dropdown-fade-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes dropdown-fade-slide-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+.plus-dropdown {
+  animation: dropdown-fade-slide-in 200ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.plus-dropdown.closing {
+  animation: dropdown-fade-slide-out 150ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.plus-dropdown-item {
+  transition: background 150ms ease-out;
+}
+
+.plus-dropdown-item:hover {
+  background: var(--alpha-light-50);
+}
