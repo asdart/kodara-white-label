@@ -310,6 +310,25 @@ html, body, #root {
   cursor: pointer;
 }
 
+/* ── Sidebar collapse transition ── */
+.sidebar-root {
+  transition: width 0.25s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+.sidebar-inner {
+  transition: padding 0.25s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+
+.sidebar-nav-row {
+  transition: padding 0.25s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+
+.sidebar-label {
+  transition: opacity 0.15s ease;
+}
+
 /* ── Sidebar nav item hover ── */
 .sidebar-nav-item {
   --nav-item-color: var(--alpha-light-600);

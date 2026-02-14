@@ -13,6 +13,7 @@ export default function Dashboard() {
   const [currentPage, setCurrentPage] = useState<'home' | 'chats' | 'chat'>('home');
   const [chatInitialMessage, setChatInitialMessage] = useState('');
   const [chatKey, setChatKey] = useState(0);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const startChat = useCallback((message: string) => {
     setChatInitialMessage(message);
@@ -40,7 +41,12 @@ export default function Dashboard() {
       />
 
       {/* Sidebar */}
-      <Sidebar currentPage={currentPage} onNavigate={handleNavigate} />
+      <Sidebar
+        currentPage={currentPage}
+        onNavigate={handleNavigate}
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
+      />
 
       {/* Main content */}
       {currentPage === 'chat' ? (

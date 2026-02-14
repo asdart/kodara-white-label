@@ -1,4 +1,4 @@
-const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY as string;
+const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY as string | undefined;
 
 export interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
@@ -11,15 +11,27 @@ const SYSTEM_PROMPT: ChatMessage = {
     'You are Leanne, a warm and insightful AI wellness and life coach. You respond with empathy, clarity, and genuine curiosity about the person you\'re helping. Keep your responses conversational but thoughtful — typically 2-3 short paragraphs. Ask follow-up questions to understand the user better. Never use markdown formatting, bullet points, or numbered lists — write in natural flowing prose.',
 };
 
+function getApiKey(): string {
+  const key = OPENAI_API_KEY?.trim();
+  if (!key) {
+    throw new Error(
+      'OpenAI API key is not configured. Add VITE_OPENAI_API_KEY to your .env file. See .env.example for details.',
+    );
+  }
+  return key;
+}
+
 export async function* streamChat(
   messages: ChatMessage[],
   signal?: AbortSignal,
 ): AsyncGenerator<string> {
+  const apiKey = getApiKey();
+
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${OPENAI_API_KEY}`,
+      Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
       model: 'gpt-4o-mini',
@@ -31,7 +43,20 @@ export async function* streamChat(
 
   if (!response.ok) {
     const errorBody = await response.text();
-    throw new Error(`OpenAI API error ${response.status}: ${errorBody}`);
+    let message = `OpenAI API error ${response.status}`;
+    if (response.status === 401) {
+      message = 'Invalid or expired API key. Check your VITE_OPENAI_API_KEY in .env.';
+    } else if (response.status === 429) {
+      message = 'Rate limit exceeded. Please try again later.';
+    } else if (errorBody) {
+      try {
+        const parsed = JSON.parse(errorBody);
+        if (parsed.error?.message) message = parsed.error.message;
+      } catch {
+        message = `${message}: ${errorBody.slice(0, 200)}`;
+      }
+    }
+    throw new Error(message);
   }
 
   const reader = response.body!.getReader();

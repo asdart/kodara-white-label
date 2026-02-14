@@ -702,11 +702,13 @@ export default function ChatPage({ initialMessage, onNewTask }: ChatPageProps) {
       }
     } catch (error) {
       console.error('Chat error:', error);
+      const errMessage =
+        error instanceof Error ? error.message : 'Sorry, I encountered an error. Please try again.';
       setMessages((prev) => {
         const updated = [...prev];
         updated[updated.length - 1] = {
           ...updated[updated.length - 1],
-          content: 'Sorry, I encountered an error. Please try again.',
+          content: errMessage,
         };
         return updated;
       });
