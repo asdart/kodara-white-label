@@ -304,7 +304,6 @@ function SpeedPicker({ rate, onRateChange }: { rate: number; onRateChange: (r: n
 function AudioPlayer({
   isPlaying,
   onPause,
-  onClose,
   elapsed,
   duration,
   volume,
@@ -314,7 +313,6 @@ function AudioPlayer({
 }: {
   isPlaying: boolean;
   onPause: () => void;
-  onClose: () => void;
   elapsed: number;
   duration: number;
   volume: number;
@@ -812,7 +810,6 @@ export default function ChatPage({ initialMessage, onNewTask }: ChatPageProps) {
           <AudioPlayer
             isPlaying={voicePlaying}
             onPause={handleVoicePause}
-            onClose={stopVoice}
             elapsed={voiceElapsed}
             duration={voiceDuration}
             volume={voiceVolume}
