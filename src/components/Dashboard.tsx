@@ -1,16 +1,17 @@
 import { useState, useCallback } from 'react';
-import Sidebar from './Sidebar';
+import Sidebar, { type SidebarPage } from './Sidebar';
 import ChatInput from './ChatInput';
 import SuggestionCards from './SuggestionCards';
 import MyChatsPage from './MyChatsPage';
 import ChatPage from './ChatPage';
+import ConnectorsPage from './ConnectorsPage';
 import { PenSparkleIcon, AppleIcon } from './Icons';
 import glowSvg from '../assets/ellipse-glow.svg';
 import ringSvg from '../assets/ellipse-border.svg';
 import crescentSvg from '../assets/figma-export/d251448fe157d8c297e9697d264bb33fa3827e0c.svg';
 
 export default function Dashboard() {
-  const [currentPage, setCurrentPage] = useState<'home' | 'chats' | 'chat'>('home');
+  const [currentPage, setCurrentPage] = useState<SidebarPage>('home');
   const [chatInitialMessage, setChatInitialMessage] = useState('');
   const [chatKey, setChatKey] = useState(0);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -21,7 +22,7 @@ export default function Dashboard() {
     setCurrentPage('chat');
   }, []);
 
-  const handleNavigate = useCallback((page: 'home' | 'chats') => {
+  const handleNavigate = useCallback((page: SidebarPage) => {
     setCurrentPage(page);
   }, []);
 
@@ -55,8 +56,12 @@ export default function Dashboard() {
           initialMessage={chatInitialMessage}
           onNewTask={() => setCurrentPage('home')}
         />
-      ) : currentPage === 'chats' ? (
-        <MyChatsPage key="chats" />
+      ) : currentPage === 'tasks' ? (
+        <MyChatsPage key="tasks" />
+      ) : currentPage === 'connectors' ? (
+        <div key="connectors" className="flex flex-col flex-1 min-h-0 min-w-0 h-full overflow-hidden">
+          <ConnectorsPage />
+        </div>
       ) : (
         <div key="home" className="flex flex-col flex-1 min-h-0 min-w-0 relative h-full">
           {/* Top bar */}

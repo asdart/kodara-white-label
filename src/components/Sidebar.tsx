@@ -1,11 +1,21 @@
-import { PenSparkleIcon, MyTasksIcon, SettingsIcon, SidebarCollapseIcon } from './Icons';
+import { PenSparkleIcon, BarChartAiIcon, VideoIcon, PuzzleIcon, SparkleNavIcon, SettingsIcon, SidebarCollapseIcon } from './Icons';
+
+export type SidebarPage = 'home' | 'tasks' | 'courses' | 'connectors' | 'skills' | 'chat';
 
 interface SidebarProps {
-  currentPage?: 'home' | 'chats' | 'chat';
-  onNavigate?: (page: 'home' | 'chats') => void;
+  currentPage?: SidebarPage;
+  onNavigate?: (page: SidebarPage) => void;
   collapsed?: boolean;
   onToggleCollapse?: () => void;
 }
+
+const navItems: { key: SidebarPage; label: string; icon: typeof PenSparkleIcon; activeWhen: SidebarPage[] }[] = [
+  { key: 'home', label: 'New task', icon: PenSparkleIcon, activeWhen: ['home', 'chat'] },
+  { key: 'tasks', label: 'My tasks', icon: BarChartAiIcon, activeWhen: ['tasks'] },
+  { key: 'courses', label: 'Courses', icon: VideoIcon, activeWhen: ['courses'] },
+  { key: 'connectors', label: 'Connectors', icon: PuzzleIcon, activeWhen: ['connectors'] },
+  { key: 'skills', label: 'Skills', icon: SparkleNavIcon, activeWhen: ['skills'] },
+];
 
 export default function Sidebar({
   currentPage = 'home',
@@ -51,7 +61,6 @@ export default function Sidebar({
             className="flex items-center overflow-hidden w-full"
             style={{ justifyContent: collapsed ? 'center' : 'space-between' }}
           >
-            {/* User info — hidden when collapsed */}
             {!collapsed && (
               <div className="sidebar-label" style={{ paddingLeft: '4px', paddingRight: '8px' }}>
                 <div className="flex items-center" style={{ gap: '6px' }}>
@@ -80,7 +89,6 @@ export default function Sidebar({
               </div>
             )}
 
-            {/* Collapse button */}
             <button
               className="flex items-center justify-center shrink-0 hover:opacity-70 transition-opacity"
               style={{
@@ -105,87 +113,53 @@ export default function Sidebar({
           className="flex flex-col items-start shrink-0 w-full min-w-0 overflow-hidden"
           style={{ paddingTop: '8px', paddingBottom: '8px' }}
         >
-          {/* New chat */}
-          <div
-            className="flex items-center w-full min-w-0 sidebar-nav-row"
-            style={{ height: '32px', paddingLeft: collapsed ? '4px' : '8px', paddingRight: '8px' }}
-          >
-            <div
-              className={`sidebar-nav-item flex items-center h-full cursor-pointer${currentPage === 'home' || currentPage === 'chat' ? ' active' : ''}`}
-              style={{
-                gap: '6px',
-                paddingLeft: '8px',
-                paddingRight: '10px',
-                paddingTop: '8px',
-                paddingBottom: '8px',
-                borderRadius: '8px',
-                background: currentPage === 'home' || currentPage === 'chat' ? 'rgba(0, 0, 0, 0.03)' : undefined,
-                width: collapsed ? 'auto' : '100%',
-                justifyContent: collapsed ? 'center' : undefined,
-              }}
-              onClick={() => onNavigate?.('home')}
-              title="New chat"
-            >
-              <PenSparkleIcon className="w-5 h-5 shrink-0" color="var(--nav-item-color)" />
-              {!collapsed && (
-                <span
-                  className="font-medium truncate flex-1 min-w-0 overflow-hidden sidebar-label"
+          {navItems.map((item) => {
+            const isActive = item.activeWhen.includes(currentPage);
+            const Icon = item.icon;
+            return (
+              <div
+                key={item.key}
+                className="flex items-center w-full min-w-0 sidebar-nav-row"
+                style={{ height: '32px', paddingLeft: collapsed ? '4px' : '8px', paddingRight: '8px' }}
+              >
+                <div
+                  className={`sidebar-nav-item flex items-center h-full cursor-pointer${isActive ? ' active' : ''}`}
                   style={{
-                    fontFamily: 'var(--font-primary)',
-                    fontSize: 'var(--body-3-size)',
-                    lineHeight: 'var(--body-3-line)',
-                    letterSpacing: 'var(--body-3-spacing)',
-                    color: 'var(--nav-item-color)',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
+                    gap: '6px',
+                    paddingLeft: '8px',
+                    paddingRight: '10px',
+                    paddingTop: '8px',
+                    paddingBottom: '8px',
+                    borderRadius: '8px',
+                    background: isActive ? 'rgba(0, 175, 208, 0.08)' : undefined,
+                    width: collapsed ? 'auto' : '100%',
+                    justifyContent: collapsed ? 'center' : undefined,
+                    position: 'relative',
                   }}
+                  onClick={() => onNavigate?.(item.key)}
+                  title={item.label}
                 >
-                  New chat
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* My chats */}
-          <div
-            className="flex items-center w-full min-w-0 sidebar-nav-row"
-            style={{ height: '32px', paddingLeft: collapsed ? '4px' : '8px', paddingRight: '8px' }}
-          >
-            <div
-              className={`sidebar-nav-item flex items-center h-full cursor-pointer${currentPage === 'chats' ? ' active' : ''}`}
-              style={{
-                gap: '6px',
-                paddingLeft: '8px',
-                paddingRight: '10px',
-                paddingTop: '8px',
-                paddingBottom: '8px',
-                borderRadius: '8px',
-                background: currentPage === 'chats' ? 'rgba(0, 0, 0, 0.03)' : undefined,
-                width: collapsed ? 'auto' : '100%',
-                justifyContent: collapsed ? 'center' : undefined,
-              }}
-              onClick={() => onNavigate?.('chats')}
-              title="My chats"
-            >
-              <MyTasksIcon className="w-5 h-5 shrink-0" color="var(--nav-item-color)" />
-              {!collapsed && (
-                <span
-                  className="font-medium truncate flex-1 min-w-0 overflow-hidden sidebar-label"
-                  style={{
-                    fontFamily: 'var(--font-primary)',
-                    fontSize: 'var(--body-3-size)',
-                    lineHeight: 'var(--body-3-line)',
-                    letterSpacing: 'var(--body-3-spacing)',
-                    color: 'var(--nav-item-color)',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  My chats
-                </span>
-              )}
-            </div>
-          </div>
+                  <Icon className="w-5 h-5 shrink-0" color="var(--nav-item-color)" />
+                  {!collapsed && (
+                    <span
+                      className="font-medium truncate flex-1 min-w-0 overflow-hidden sidebar-label"
+                      style={{
+                        fontFamily: 'var(--font-primary)',
+                        fontSize: 'var(--body-3-size)',
+                        lineHeight: 'var(--body-3-line)',
+                        letterSpacing: 'var(--body-3-spacing)',
+                        color: 'var(--nav-item-color)',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {item.label}
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
 
         {/* Settings - bottom */}

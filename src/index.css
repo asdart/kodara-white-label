@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+@theme {
+  --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+}
+
 :root {
   /* ── Figma Color Tokens ── */
 
@@ -11,6 +15,7 @@
   --color-neutral-600: #525252;
 
   /* Alpha / Light  (base #1a1a1a) */
+  --alpha-light-25: rgba(26, 26, 26, 0.03);    /* #1a1a1a0f */
   --alpha-light-50: rgba(26, 26, 26, 0.06);    /* #1a1a1a0f */
   --alpha-light-100: rgba(26, 26, 26, 0.09);   /* #1a1a1a17 */
   --alpha-light-200: rgba(26, 26, 26, 0.2);    /* #1a1a1a33 */
@@ -54,6 +59,7 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  font-family: inherit;
 }
 
 html, body, #root {
@@ -62,6 +68,11 @@ html, body, #root {
   font-family: var(--font-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Force Instrument Sans on form elements (they use system fonts by default) */
+input, button, select, textarea, [contenteditable] {
+  font-family: var(--font-primary) !important;
 }
 
 /* ── Chat input states ── */
@@ -346,7 +357,151 @@ html, body, #root {
 
 .sidebar-nav-item.active:hover {
   --nav-item-color: var(--alpha-light-900);
-  background: rgba(0, 0, 0, 0.03) !important;
+  background: rgba(0, 175, 208, 0.08) !important;
+}
+
+/* ── Connector card (base + hover; must be in CSS so hover can override) ── */
+.connector-card {
+  background: var(--alpha-dark-300, rgba(255, 255, 255, 0.28));
+  border: 1px solid var(--alpha-light-50);
+  transition: background 300ms ease-out, border-color 300ms ease-out;
+}
+
+.connector-card:hover {
+  background: var(--alpha-light-25);
+  border-color: var(--alpha-light-200);
+}
+
+/* ── Connector search placeholder ── */
+.connector-search::placeholder {
+  color: rgba(26, 26, 26, 0.48);
+  font-weight: 500;
+}
+
+/* ── Connector modal overlay ── */
+.connector-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(4px);
+  animation: connector-overlay-in 250ms ease-out;
+}
+
+.connector-modal {
+  animation: connector-modal-in 300ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.connector-modal-overlay.closing {
+  animation: connector-overlay-out 250ms ease-in forwards;
+}
+
+.connector-modal-overlay.closing .connector-modal {
+  animation: connector-modal-out 200ms ease-in forwards;
+}
+
+@keyframes connector-overlay-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes connector-overlay-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+@keyframes connector-modal-in {
+  from { opacity: 0; transform: scale(0.96) translateY(8px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes connector-modal-out {
+  from { opacity: 1; transform: scale(1) translateY(0); }
+  to   { opacity: 0; transform: scale(0.96) translateY(8px); }
+}
+
+/* ── Connector modal button ── */
+.connector-modal-btn {
+  position: relative;
+  width: 100%;
+  padding: 8px 20px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  background: linear-gradient(180deg, #737373 0%, #404040 100%);
+  overflow: hidden;
+  transition: opacity 200ms ease;
+}
+
+.connector-modal-btn:hover {
+  opacity: 0.9;
+}
+
+/* ── Modal icon slide-in from bottom ── */
+.modal-icon-enter {
+  opacity: 0;
+  animation: modal-icon-slide-up 500ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes modal-icon-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Modal connecting line draw-in ── */
+.modal-line-draw {
+  opacity: 0;
+  animation: modal-line-fade-in 1ms ease-out 650ms forwards;
+}
+
+.modal-line-draw line {
+  clip-path: inset(0 100% 0 0);
+  animation: modal-line-reveal 800ms ease-out 950ms forwards;
+}
+
+.modal-line-draw circle {
+  opacity: 0;
+  transform-origin: center;
+  transform-box: fill-box;
+}
+
+.modal-line-draw circle:first-child {
+  animation: modal-dot-scale-in 350ms cubic-bezier(0.16, 1, 0.3, 1) 700ms forwards;
+}
+
+.modal-line-draw circle:last-child {
+  animation: modal-dot-scale-in 350ms cubic-bezier(0.16, 1, 0.3, 1) 1650ms forwards;
+}
+
+@keyframes modal-line-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes modal-line-reveal {
+  from { clip-path: inset(0 100% 0 0); }
+  to   { clip-path: inset(0 0% 0 0); }
+}
+
+@keyframes modal-dot-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 /* ── Smooth scroll container ── */
