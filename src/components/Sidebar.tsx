@@ -1,4 +1,4 @@
-import { PenSparkleIcon, BarChartAiIcon, VideoIcon, PuzzleIcon, SparkleNavIcon, SettingsIcon, SidebarCollapseIcon } from './Icons';
+import { PenSparkleIcon, BarChartAiIcon, VideoIcon, SettingsIcon, SidebarCollapseIcon } from './Icons';
 
 export type SidebarPage = 'home' | 'tasks' | 'courses' | 'connectors' | 'skills' | 'chat';
 
