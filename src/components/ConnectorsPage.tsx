@@ -342,10 +342,51 @@ function FacebookConnectModal({ onClose }: { onClose: () => void }) {
                   color: 'var(--alpha-light-600, rgba(26,26,26,0.6))',
                 }}
               >
-                Facebook Ads automatically syncs your campaigns with your Kodara account. By
-                continuing, you are agreeing to Kodara&rsquo;s terms and conditions. Need help?
-                please contact support
+                Facebook Ads syncs campaigns with Kodara. By continuing, you
+                agree to Kodara&rsquo;s terms. Need help? Contact support.
               </p>
+            </div>
+
+            <div style={{ width: '100%', height: '1px', background: 'rgba(26,26,26,0.06)' }} />
+
+            {/* Tools list */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <p
+                style={{
+                  fontFamily: 'var(--font-primary)',
+                  fontWeight: 600,
+                  fontSize: '14px',
+                  lineHeight: '20px',
+                  color: 'var(--alpha-light-900, rgba(26,26,26,0.8))',
+                }}
+              >
+                Tools:
+              </p>
+              {[
+                'Analyze ad accounts',
+                'Create & launch new ads',
+                'View campaign performance',
+                'Spy on competitor ads',
+                'Create detailed reports',
+                'Automate rules',
+              ].map((tool) => (
+                <div key={tool} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <svg width="14" height="10" viewBox="0 0 14 10" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
+                    <path d="M1 5L5 9L13 1" stroke="rgba(26,26,26,0.6)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  <span
+                    style={{
+                      fontFamily: 'var(--font-primary)',
+                      fontWeight: 400,
+                      fontSize: '14px',
+                      lineHeight: '20px',
+                      color: 'var(--alpha-light-600, rgba(26,26,26,0.6))',
+                    }}
+                  >
+                    {tool}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
 

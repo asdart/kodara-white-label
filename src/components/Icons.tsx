@@ -62,6 +62,14 @@ export function ArrowUpIcon({ className = "w-5 h-5", color = LIGHT_600 }: { clas
   );
 }
 
+export function ArrowDownIcon({ className = "w-5 h-5", color = LIGHT_600 }: { className?: string; color?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M10 4v12M10 16l-5-5M10 16l5-5" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export function SidebarCollapseIcon({ className = "w-5 h-5", color = LIGHT_600 }: { className?: string; color?: string }) {
   return (
     <svg className={className} viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">

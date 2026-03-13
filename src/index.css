@@ -504,6 +504,68 @@ input, button, select, textarea, [contenteditable] {
   }
 }
 
+/* ── Settings modal overlay ── */
+.settings-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(4px);
+  animation: settings-overlay-in 300ms ease-out;
+}
+
+.settings-modal {
+  animation: settings-modal-in 350ms cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: center center;
+  scrollbar-width: none;
+}
+
+.settings-modal *::-webkit-scrollbar {
+  display: none;
+}
+
+.settings-modal-overlay.closing {
+  animation: settings-overlay-out 250ms ease-in forwards;
+}
+
+.settings-modal-overlay.closing .settings-modal {
+  animation: settings-modal-out 200ms ease-in forwards;
+}
+
+@keyframes settings-overlay-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes settings-overlay-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+@keyframes settings-modal-in {
+  from { opacity: 0; transform: scale(0.92); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes settings-modal-out {
+  from { opacity: 1; transform: scale(1); }
+  to   { opacity: 0; transform: scale(0.92); }
+}
+
+/* View transition within settings modal */
+.settings-view-enter {
+  animation: settings-view-in 350ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes settings-view-in {
+  from { opacity: 0; transform: scale(0.94); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
 /* ── Smooth scroll container ── */
 .smooth-scroll {
   scroll-behavior: smooth;
@@ -525,6 +587,37 @@ input, button, select, textarea, [contenteditable] {
 
 .smooth-scroll::-webkit-scrollbar-thumb:hover {
   background: var(--alpha-light-200);
+}
+
+/* ── Scroll-to-bottom button ── */
+.scroll-to-bottom-btn {
+  position: absolute;
+  top: -40px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--alpha-light-200);
+  background: var(--alpha-dark-600);
+  backdrop-filter: blur(12px);
+  color: var(--alpha-dark-600);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color 200ms ease;
+  animation: scroll-btn-fade-in 200ms ease-out;
+}
+
+.scroll-to-bottom-btn:hover {
+  border-color: var(--alpha-light-200);
+}
+
+@keyframes scroll-btn-fade-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 
 /* ── Chat card entrance animation ── */
@@ -741,4 +834,135 @@ input, button, select, textarea, [contenteditable] {
 
 .account-submit-btn:hover .account-submit-inner svg {
   transform: translateX(2px);
+}
+
+/* ── Table skeleton shimmer ── */
+@keyframes skeleton-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton-bar {
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    var(--alpha-light-50) 25%,
+    var(--alpha-light-100) 50%,
+    var(--alpha-light-50) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.6s ease-in-out infinite;
+}
+
+.table-row-enter {
+  animation: table-row-fade-in 300ms ease-out both;
+}
+
+@keyframes table-row-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Thinking steps animations ── */
+.thinking-gradient-ring {
+  border-radius: 50%;
+  position: relative;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--alpha-light-400) 40%,
+    transparent 80%
+  );
+  background-size: 200% 100%;
+  animation: thinking-gradient-sweep 2s ease-in-out infinite;
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2.5px), #000 calc(100% - 2px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 2.5px), #000 calc(100% - 2px));
+}
+
+@keyframes thinking-gradient-sweep {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+.thinking-shimmer-text {
+  background: linear-gradient(
+    90deg,
+    #9ca3af 0%,
+    #b0b8c4 20%,
+    #8ea4c8 40%,
+    #a5a0c4 50%,
+    #8ea4c8 60%,
+    #b0b8c4 80%,
+    #9ca3af 100%
+  );
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: thinking-shimmer-flow 2.6s ease-in-out infinite;
+}
+
+@keyframes thinking-shimmer-flow {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .thinking-shimmer-text {
+    animation: none;
+    background: none;
+    -webkit-background-clip: unset;
+    background-clip: unset;
+    -webkit-text-fill-color: unset;
+    color: var(--alpha-light-600);
+  }
+}
+
+.thinking-step-enter {
+  animation: thinking-step-in 600ms ease-out both;
+  padding-bottom: 0px;
+}
+
+.chat-divider {
+  height: 1px;
+  background: var(--alpha-light-50);
+  margin: 24px 0;
+}
+
+@keyframes thinking-step-in {
+  from { opacity: 0; transform: translateX(-6px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.thinking-steps-body {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 400ms ease;
+}
+
+.thinking-steps-body > div {
+  overflow: hidden;
+}
+
+.thinking-steps-body.thinking-steps-collapsed {
+  grid-template-rows: 0fr;
+}
+
+/* ── Roadmap stage animations ── */
+.roadmap-stage-enter {
+  animation: roadmap-stage-in 400ms ease-out both;
+}
+
+@keyframes roadmap-stage-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.roadmap-line-draw {
+  animation: roadmap-line-grow 500ms ease-out both;
+  transform-origin: top center;
+}
+
+@keyframes roadmap-line-grow {
+  from { transform: scaleY(0); opacity: 0; }
+  to { transform: scaleY(1); opacity: 1; }
 }

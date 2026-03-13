@@ -7,14 +7,13 @@ interface SidebarProps {
   onNavigate?: (page: SidebarPage) => void;
   collapsed?: boolean;
   onToggleCollapse?: () => void;
+  onSettingsClick?: () => void;
 }
 
 const navItems: { key: SidebarPage; label: string; icon: typeof PenSparkleIcon; activeWhen: SidebarPage[] }[] = [
   { key: 'home', label: 'New task', icon: PenSparkleIcon, activeWhen: ['home', 'chat'] },
   { key: 'tasks', label: 'My tasks', icon: BarChartAiIcon, activeWhen: ['tasks'] },
   { key: 'courses', label: 'Courses', icon: VideoIcon, activeWhen: ['courses'] },
-  { key: 'connectors', label: 'Connectors', icon: PuzzleIcon, activeWhen: ['connectors'] },
-  { key: 'skills', label: 'Skills', icon: SparkleNavIcon, activeWhen: ['skills'] },
 ];
 
 export default function Sidebar({
@@ -22,6 +21,7 @@ export default function Sidebar({
   onNavigate,
   collapsed = false,
   onToggleCollapse,
+  onSettingsClick,
 }: SidebarProps) {
   return (
     <div
@@ -187,6 +187,7 @@ export default function Sidebar({
                 justifyContent: collapsed ? 'center' : undefined,
               }}
               title="Settings"
+              onClick={onSettingsClick}
             >
               <SettingsIcon className="w-5 h-5 shrink-0" color="var(--nav-item-color)" />
               {!collapsed && (

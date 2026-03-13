@@ -1,10 +1,12 @@
 import { useState, useCallback } from 'react';
 import Sidebar, { type SidebarPage } from './Sidebar';
 import ChatInput from './ChatInput';
-import SuggestionCards from './SuggestionCards';
+import SuggestionCards, { simulatedResponses, simulatedThinkingSteps, simulatedImages } from './SuggestionCards';
+import type { ThinkingStep } from './SuggestionCards';
 import MyChatsPage from './MyChatsPage';
 import ChatPage from './ChatPage';
 import ConnectorsPage from './ConnectorsPage';
+import SettingsModal from './SettingsModal';
 import { PenSparkleIcon, AppleIcon } from './Icons';
 import glowSvg from '../assets/ellipse-glow.svg';
 import ringSvg from '../assets/ellipse-border.svg';
@@ -13,11 +15,30 @@ import crescentSvg from '../assets/figma-export/d251448fe157d8c297e9697d264bb33f
 export default function Dashboard() {
   const [currentPage, setCurrentPage] = useState<SidebarPage>('home');
   const [chatInitialMessage, setChatInitialMessage] = useState('');
+  const [chatSimulatedResponse, setChatSimulatedResponse] = useState<string | undefined>();
+  const [chatSimulatedSteps, setChatSimulatedSteps] = useState<ThinkingStep[] | undefined>();
+  const [chatSimulatedImage, setChatSimulatedImage] = useState<string | undefined>();
   const [chatKey, setChatKey] = useState(0);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   const startChat = useCallback((message: string) => {
     setChatInitialMessage(message);
+    setChatSimulatedResponse(undefined);
+    setChatSimulatedSteps(undefined);
+    setChatSimulatedImage(undefined);
+    setChatKey((k) => k + 1);
+    setCurrentPage('chat');
+  }, []);
+
+  const startSimulatedChat = useCallback((message: string) => {
+    const response = simulatedResponses[message];
+    const steps = simulatedThinkingSteps[message];
+    const image = simulatedImages[message];
+    setChatInitialMessage(message);
+    setChatSimulatedResponse(response);
+    setChatSimulatedSteps(steps);
+    setChatSimulatedImage(image);
     setChatKey((k) => k + 1);
     setCurrentPage('chat');
   }, []);
@@ -47,6 +68,7 @@ export default function Dashboard() {
         onNavigate={handleNavigate}
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
+        onSettingsClick={() => setShowSettings(true)}
       />
 
       {/* Main content */}
@@ -54,6 +76,9 @@ export default function Dashboard() {
         <ChatPage
           key={chatKey}
           initialMessage={chatInitialMessage}
+          simulatedResponse={chatSimulatedResponse}
+          simulatedSteps={chatSimulatedSteps}
+          simulatedImage={chatSimulatedImage}
           onNewTask={() => setCurrentPage('home')}
         />
       ) : currentPage === 'tasks' ? (
@@ -221,13 +246,17 @@ export default function Dashboard() {
 
               {/* Suggestion cards */}
               <div className="chat-card-enter w-full" style={{ animationDelay: '160ms' }}>
-                <SuggestionCards onSelect={startChat} />
+                <SuggestionCards onSelect={startSimulatedChat} />
               </div>
             </div>
             {/* Bottom spacer */}
             <div className="flex-1 min-h-0 shrink-[3]" />
           </div>
         </div>
+      )}
+
+      {showSettings && (
+        <SettingsModal onClose={() => setShowSettings(false)} />
       )}
     </div>
   );

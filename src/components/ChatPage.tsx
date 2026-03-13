@@ -1,17 +1,22 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import ChatInput from './ChatInput';
-import { PenSparkleIcon, SuggestionArrowIcon, CopyIcon, ThumbsUpIcon, ThumbsDownIcon, VoiceIcon, FeedbackChatIcon, MicIcon, PauseIcon, PlayIcon } from './Icons';
+import { PenSparkleIcon, SuggestionArrowIcon, CopyIcon, ThumbsUpIcon, ThumbsDownIcon, VoiceIcon, FeedbackChatIcon, MicIcon, PauseIcon, PlayIcon, ArrowDownIcon } from './Icons';
 import { streamChat, type ChatMessage as APIChatMessage } from '../services/openai';
+import type { ThinkingStep } from './SuggestionCards';
 
 /* ── Types ── */
 interface Message {
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+  imageUrl?: string;
 }
 
 interface ChatPageProps {
   initialMessage?: string;
+  simulatedResponse?: string;
+  simulatedSteps?: ThinkingStep[];
+  simulatedImage?: string;
   onNewTask?: () => void;
 }
 
@@ -54,12 +59,425 @@ function extractOptions(content: string): string[] {
   return options.length >= 2 && options.length <= 8 ? options : [];
 }
 
+/* ── Rich content renderer (supports markdown pipe tables + roadmap blocks) ── */
+
+interface RoadmapStage {
+  title: string;
+  timeline: string;
+  description: string;
+  milestone: string;
+}
+
+type ContentBlock =
+  | { type: 'text'; value: string }
+  | { type: 'table'; headers: string[]; rows: string[][] }
+  | { type: 'roadmap'; stages: RoadmapStage[]; closed: boolean };
+
+function parseContentBlocks(text: string): ContentBlock[] {
+  const lines = text.split('\n');
+  const blocks: ContentBlock[] = [];
+  let textBuffer: string[] = [];
+  let i = 0;
+
+  const flushText = () => {
+    if (textBuffer.length > 0) {
+      blocks.push({ type: 'text', value: textBuffer.join('\n') });
+      textBuffer = [];
+    }
+  };
+
+  const parsePipeRow = (line: string): string[] =>
+    line.split('|').slice(1, -1).map((c) => c.trim());
+
+  const isSeparator = (line: string): boolean =>
+    /^\|[\s-:|]+\|$/.test(line.trim());
+
+  while (i < lines.length) {
+    const line = lines[i];
+
+    if (line.trim() === '[ROADMAP]') {
+      flushText();
+      i++;
+      const stages: RoadmapStage[] = [];
+      while (i < lines.length && lines[i].trim() !== '[/ROADMAP]') {
+        const parts = lines[i].split('|').map((s) => s.trim());
+        if (parts.length >= 4) {
+          stages.push({ title: parts[0], timeline: parts[1], description: parts[2], milestone: parts[3] });
+        }
+        i++;
+      }
+      const closed = i < lines.length && lines[i].trim() === '[/ROADMAP]';
+      if (closed) i++;
+      blocks.push({ type: 'roadmap', stages, closed });
+    } else if (
+      line.trim().startsWith('|') &&
+      line.trim().endsWith('|') &&
+      i + 1 < lines.length &&
+      isSeparator(lines[i + 1])
+    ) {
+      flushText();
+      const headers = parsePipeRow(line);
+      i += 2;
+      const rows: string[][] = [];
+      while (i < lines.length && lines[i].trim().startsWith('|') && lines[i].trim().endsWith('|')) {
+        rows.push(parsePipeRow(lines[i]));
+        i++;
+      }
+      blocks.push({ type: 'table', headers, rows });
+    } else {
+      textBuffer.push(line);
+      i++;
+    }
+  }
+  flushText();
+  return blocks;
+}
+
+const tableCellStyle: React.CSSProperties = {
+  fontFamily: 'var(--font-primary)',
+  fontSize: 'var(--body-3-size)',
+  lineHeight: 'var(--body-3-line)',
+  letterSpacing: 'var(--body-3-spacing)',
+  color: 'var(--alpha-light-900)',
+  padding: '12px 16px',
+  borderBottom: '1px solid var(--alpha-light-100)',
+};
+
+const tableHeaderStyle: React.CSSProperties = {
+  ...tableCellStyle,
+  fontWeight: 600,
+  color: 'var(--alpha-light-600)',
+  fontSize: 'var(--body-4-size)',
+  textTransform: 'uppercase',
+  letterSpacing: '0.04em',
+  background: 'var(--alpha-dark-300)',
+};
+
+const SKELETON_WIDTHS = [
+  ['40%', '70%', '60%'],
+  ['55%', '50%', '75%'],
+  ['35%', '65%', '55%'],
+  ['50%', '45%', '70%'],
+  ['45%', '60%', '50%'],
+  ['60%', '55%', '65%'],
+  ['38%', '72%', '48%'],
+];
+
+function SkeletonRow({ cols, index, isLast }: { cols: number; index: number; isLast: boolean }) {
+  const pick = SKELETON_WIDTHS[index % SKELETON_WIDTHS.length];
+  return (
+    <tr style={{ opacity: 1 - index * 0.08 }}>
+      {Array.from({ length: cols }, (_, ci) => (
+        <td
+          key={ci}
+          style={{
+            ...tableCellStyle,
+            borderBottom: isLast ? 'none' : tableCellStyle.borderBottom,
+          }}
+        >
+          <div
+            className="skeleton-bar"
+            style={{
+              width: pick[ci % pick.length] || '50%',
+              height: '14px',
+              animationDelay: `${(index * cols + ci) * 80}ms`,
+            }}
+          />
+        </td>
+      ))}
+    </tr>
+  );
+}
+
+function RoadmapSkeleton({ count, total }: { count: number; total: number }) {
+  const remaining = Math.max(total - count, 0);
+  if (remaining <= 0) return null;
+  return (
+    <>
+      {Array.from({ length: remaining }, (_, si) => (
+        <div key={`rskel-${si}`} className="flex" style={{ gap: '20px', opacity: 1 - si * 0.15 }}>
+          <div className="flex flex-col items-center" style={{ width: '40px', flexShrink: 0 }}>
+            <div className="skeleton-bar" style={{ width: '14px', height: '14px', borderRadius: '50%', animationDelay: `${si * 150}ms` }} />
+            {si < remaining - 1 && (
+              <div className="skeleton-bar" style={{ width: '2px', flex: 1, minHeight: '60px', borderRadius: '1px', animationDelay: `${si * 150 + 50}ms` }} />
+            )}
+          </div>
+          <div className="flex flex-col" style={{ gap: '6px', paddingBottom: '28px', flex: 1 }}>
+            <div className="skeleton-bar" style={{ width: '30%', height: '12px', animationDelay: `${si * 150 + 30}ms` }} />
+            <div className="skeleton-bar" style={{ width: '55%', height: '16px', animationDelay: `${si * 150 + 60}ms` }} />
+            <div className="skeleton-bar" style={{ width: '80%', height: '12px', animationDelay: `${si * 150 + 90}ms` }} />
+          </div>
+        </div>
+      ))}
+    </>
+  );
+}
+
+function RoadmapChart({ stages, isStreaming, totalStages, closed }: { stages: RoadmapStage[]; isStreaming: boolean; totalStages: number; closed: boolean }) {
+  return (
+    <div
+      style={{
+        margin: '16px 0',
+        borderRadius: '16px',
+        border: '1px solid var(--alpha-light-100)',
+        background: 'var(--alpha-dark-300)',
+        padding: '24px 20px',
+      }}
+    >
+      {stages.map((stage, si) => {
+        const isLast = si === stages.length - 1 && closed;
+        return (
+          <div key={si} className="roadmap-stage-enter flex" style={{ gap: '20px', animationDelay: `${si * 60}ms` }}>
+            {/* Timeline rail */}
+            <div className="flex flex-col items-center" style={{ width: '40px', flexShrink: 0 }}>
+              {/* Node */}
+              <div
+                style={{
+                  width: '14px',
+                  height: '14px',
+                  borderRadius: '50%',
+                  background: 'var(--color-pelorous-600)',
+                  border: '3px solid var(--color-pelorous-50)',
+                  boxShadow: '0 0 0 1px var(--color-pelorous-600)',
+                  flexShrink: 0,
+                  marginTop: '3px',
+                }}
+              />
+              {/* Connector line */}
+              {!isLast && (
+                <div
+                  className="roadmap-line-draw"
+                  style={{
+                    width: '2px',
+                    flex: 1,
+                    minHeight: '20px',
+                    background: 'linear-gradient(180deg, var(--color-pelorous-600) 0%, var(--alpha-light-100) 100%)',
+                    borderRadius: '1px',
+                  }}
+                />
+              )}
+            </div>
+
+            {/* Content */}
+            <div style={{ paddingBottom: isLast ? '0' : '28px', flex: 1 }}>
+              <span
+                style={{
+                  fontFamily: 'var(--font-primary)',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  lineHeight: '16px',
+                  letterSpacing: '0.06em',
+                  textTransform: 'uppercase',
+                  color: 'var(--color-pelorous-600)',
+                }}
+              >
+                {stage.timeline}
+              </span>
+              <p
+                style={{
+                  fontFamily: 'var(--font-primary)',
+                  fontSize: 'var(--body-3-size)',
+                  lineHeight: 'var(--body-3-line)',
+                  fontWeight: 600,
+                  color: 'var(--alpha-light-900)',
+                  margin: '4px 0 6px',
+                }}
+              >
+                {stage.title}
+              </p>
+              <p
+                style={{
+                  fontFamily: 'var(--font-primary)',
+                  fontSize: 'var(--body-3-size)',
+                  lineHeight: '24px',
+                  color: 'var(--alpha-light-600)',
+                  margin: 0,
+                }}
+              >
+                {stage.description}
+              </p>
+              {/* Milestone badge */}
+              <div
+                style={{
+                  marginTop: '10px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '6px 12px',
+                  borderRadius: '8px',
+                  background: 'rgba(0,139,167,0.06)',
+                  border: '1px solid rgba(0,139,167,0.1)',
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path d="M11.667 3.5L5.25 9.917 2.333 7" stroke="var(--color-pelorous-600)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                <span
+                  style={{
+                    fontFamily: 'var(--font-primary)',
+                    fontSize: 'var(--body-4-size)',
+                    lineHeight: 'var(--body-4-line)',
+                    fontWeight: 500,
+                    color: 'var(--color-pelorous-600)',
+                  }}
+                >
+                  {stage.milestone}
+                </span>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+      {isStreaming && !closed && (
+        <RoadmapSkeleton count={stages.length} total={totalStages} />
+      )}
+    </div>
+  );
+}
+
+function RichContent({ content, isStreaming, totalTableRows, totalRoadmapStages }: { content: string; isStreaming: boolean; totalTableRows?: number; totalRoadmapStages?: number }) {
+  const blocks = parseContentBlocks(content);
+  return (
+    <>
+      {blocks.map((block, i) => {
+        if (block.type === 'text') {
+          return (
+            <div key={i}>
+              {i > 0 && <div className="chat-divider" />}
+              <p
+                className="whitespace-pre-wrap"
+                style={{
+                  fontFamily: 'var(--font-primary)',
+                  fontSize: 'var(--body-3-size)',
+                  lineHeight: '28px',
+                  letterSpacing: 'var(--body-3-spacing)',
+                  color: 'var(--alpha-light-900)',
+                }}
+              >
+                {block.value}
+                {isStreaming && i === blocks.length - 1 && <span className="typing-cursor" />}
+              </p>
+            </div>
+          );
+        }
+
+        if (block.type === 'roadmap') {
+          return (
+            <div key={i}>
+              {i > 0 && <div className="chat-divider" />}
+              <RoadmapChart
+                stages={block.stages}
+                closed={block.closed}
+                isStreaming={isStreaming}
+                totalStages={totalRoadmapStages ?? block.stages.length}
+              />
+            </div>
+          );
+        }
+
+        // table block
+        const isLastBlock = i === blocks.length - 1;
+        const expectedTotal = totalTableRows ?? 0;
+        const loadedCount = block.rows.length;
+        const skeletonCount = isStreaming && isLastBlock ? Math.max(expectedTotal - loadedCount, 0) : 0;
+        const totalVisible = loadedCount + skeletonCount;
+
+        return (
+          <div key={i}>
+            {i > 0 && <div className="chat-divider" />}
+            <div
+              style={{
+                margin: '16px 0',
+                borderRadius: '12px',
+                border: '1px solid var(--alpha-light-100)',
+                overflow: 'hidden',
+              }}
+            >
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr>
+                  {block.headers.map((h, hi) => (
+                    <th key={hi} style={{ ...tableHeaderStyle, textAlign: 'left' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {block.rows.map((row, ri) => (
+                  <tr key={ri} className="table-row-enter">
+                    {row.map((cell, ci) => (
+                      <td
+                        key={ci}
+                        style={{
+                          ...tableCellStyle,
+                          fontWeight: ci === 0 ? 600 : 400,
+                          borderBottom: ri === totalVisible - 1 ? 'none' : tableCellStyle.borderBottom,
+                        }}
+                      >
+                        {cell}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+                {Array.from({ length: skeletonCount }, (_, si) => (
+                  <SkeletonRow
+                    key={`skel-${si}`}
+                    cols={block.headers.length}
+                    index={si}
+                    isLast={si === skeletonCount - 1 && loadedCount + si === totalVisible - 1}
+                  />
+                ))}
+              </tbody>
+            </table>
+            </div>
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
 /* ── Sub-components ── */
 
 /** User message — right-aligned bubble, max 480px (Figma 6:346) */
-function UserBubble({ content }: { content: string }) {
+function UserBubble({ content, imageUrl }: { content: string; imageUrl?: string }) {
+  const [imgError, setImgError] = useState(false);
+
   return (
-    <div className="flex justify-end">
+    <div className="flex flex-col items-end" style={{ gap: '16px' }}>
+      {imageUrl && (
+        <div
+          className="chat-bubble-enter"
+          style={{
+            maxWidth: '320px',
+            borderRadius: '16px',
+            overflow: 'hidden',
+            background: 'var(--alpha-light-25)',
+          }}
+        >
+          {!imgError ? (
+            <img
+              src={imageUrl}
+              alt="Meal photo"
+              onError={() => setImgError(true)}
+              style={{
+                width: '100%',
+                display: 'block',
+              }}
+            />
+          ) : (
+            <div
+              className="flex items-center justify-center"
+              style={{
+                width: '100%',
+                aspectRatio: '4 / 3',
+                background: 'linear-gradient(145deg, #e8f5e9 0%, #fff8e1 50%, #ffecb3 100%)',
+              }}
+            >
+              <span style={{ fontSize: '48px' }}>🥗</span>
+            </div>
+          )}
+        </div>
+      )}
       <div
         className="chat-bubble-enter backdrop-blur-[4px]"
         style={{
@@ -407,11 +825,196 @@ function AudioPlayer({
   );
 }
 
+/* ── Thinking Steps — agentic processing indicator ── */
+
+type StepStatus = 'idle' | 'pending' | 'active' | 'done';
+
+interface ThinkingStepDisplay {
+  label: string;
+  status: StepStatus;
+}
+
+function ThinkingStepIcon({ status }: { status: StepStatus }) {
+  return (
+    <div style={{ width: '16px', height: '16px', flexShrink: 0, position: 'relative' }}>
+      <svg
+        width="16" height="16" viewBox="0 0 16 16" fill="none"
+        style={{ position: 'absolute', inset: 0, opacity: status === 'done' ? 1 : 0, transition: 'opacity 500ms ease' }}
+      >
+        <circle cx="8" cy="8" r="7.25" stroke="var(--alpha-light-200)" strokeWidth="1.5" />
+        <path d="M5 8.25L7 10.25L11 6" stroke="var(--alpha-light-400)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+      <div
+        className="thinking-gradient-ring"
+        style={{ position: 'absolute', inset: 0, opacity: status === 'active' ? 1 : 0, transition: 'opacity 500ms ease' }}
+      />
+      <div
+        style={{
+          position: 'absolute', inset: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          opacity: status === 'pending' ? 1 : 0, transition: 'opacity 500ms ease',
+        }}
+      >
+        <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--alpha-light-100)' }} />
+      </div>
+    </div>
+  );
+}
+
+function ThinkingStepsDisplay({ steps }: { steps: ThinkingStepDisplay[] }) {
+  const [collapsed, setCollapsed] = useState(false);
+  const allDone = steps.every((s) => s.status === 'done');
+  const prevAllDoneRef = useRef(false);
+
+  useEffect(() => {
+    if (allDone && !prevAllDoneRef.current) {
+      const timer = setTimeout(() => setCollapsed(true), 2000);
+      prevAllDoneRef.current = true;
+      return () => clearTimeout(timer);
+    }
+  }, [allDone]);
+
+  if (steps.length === 0) return null;
+
+  const idleStep = steps[0];
+  const processingSteps = steps.slice(1);
+  const processingDone = processingSteps.length > 0 && processingSteps.every((s) => s.status === 'done');
+
+  const hasVisibleSteps = processingSteps.some((s) => s.status !== 'pending') || allDone;
+
+  return (
+    <div style={{ marginBottom: '14px' }}>
+      {/* Idle header — always visible, same appearance */}
+      {idleStep && (
+        <div className="thinking-step-enter">
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              cursor: allDone ? 'pointer' : 'default',
+              paddingBottom: hasVisibleSteps && !collapsed ? '16px' : '0',
+              transition: 'padding 400ms ease',
+            }}
+            onClick={allDone ? () => setCollapsed((c) => !c) : undefined}
+          >
+            <span
+              className={idleStep.status === 'idle' ? 'thinking-shimmer-text' : undefined}
+              style={{
+                fontFamily: 'var(--font-primary)',
+                fontSize: 'var(--body-3-size)',
+                lineHeight: 'var(--body-3-line)',
+                color: 'var(--alpha-light-600)',
+                WebkitTextFillColor: idleStep.status === 'idle' ? 'transparent' : undefined,
+                fontWeight: 500,
+                transition: 'color 500ms ease, -webkit-text-fill-color 500ms ease',
+              }}
+            >
+              {idleStep.label}
+            </span>
+            {allDone && (
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 12 12"
+                fill="none"
+                style={{
+                  flexShrink: 0,
+                  transform: collapsed ? 'rotate(0deg)' : 'rotate(180deg)',
+                  transition: 'transform 300ms ease',
+                }}
+              >
+                <path d="M3.5 4.5L6 7L8.5 4.5" stroke="var(--alpha-light-400)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Collapsible steps body */}
+      <div className={`thinking-steps-body${collapsed ? ' thinking-steps-collapsed' : ''}`}>
+        <div style={{ paddingLeft: '1px' }}>
+          {processingSteps.map((step, si) => {
+            if (step.status === 'pending') return null;
+            return (
+              <div key={si} className="thinking-step-enter" style={{ animationDelay: `${si * 250}ms` }}>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '16px', flexShrink: 0 }}>
+                    <div style={{ height: '20px', display: 'flex', alignItems: 'center' }}>
+                      <ThinkingStepIcon status={step.status} />
+                    </div>
+                    <div
+                      style={{
+                        width: '1.5px',
+                        height: '13px',
+                        background: step.status === 'done' ? 'var(--alpha-light-200)' : 'var(--alpha-light-100)',
+                        transition: 'background 500ms ease',
+                      }}
+                    />
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1, height: '20px' }}>
+                    <span
+                      className={step.status === 'active' ? 'thinking-shimmer-text' : undefined}
+                      style={{
+                        fontFamily: 'var(--font-primary)',
+                        fontSize: 'var(--body-3-size)',
+                        lineHeight: 'var(--body-3-line)',
+                        color: step.status === 'done'
+                          ? 'var(--alpha-light-600)'
+                          : step.status === 'active'
+                            ? 'var(--alpha-light-600)'
+                            : 'var(--alpha-light-200)',
+                        WebkitTextFillColor: step.status === 'active' ? 'transparent' : undefined,
+                        fontWeight: step.status === 'done' ? 400 : 500,
+                        transition: 'color 500ms ease, -webkit-text-fill-color 500ms ease',
+                      }}
+                    >
+                      {step.label}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Done row */}
+          {processingDone && (
+            <div className="thinking-step-enter" style={{ display: 'flex', gap: '8px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '16px', flexShrink: 0 }}>
+                <div style={{ height: '20px', display: 'flex', alignItems: 'center' }}>
+                  <ThinkingStepIcon status="done" />
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', height: '20px' }}>
+                <span
+                  style={{
+                    fontFamily: 'var(--font-primary)',
+                    fontSize: 'var(--body-3-size)',
+                    lineHeight: 'var(--body-3-line)',
+                    color: 'var(--alpha-light-600)',
+                    fontWeight: 400,
+                  }}
+                >
+                  Done
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /** AI response — avatar row + indented body text + suggestion chips (Figma 18:622) */
 function AssistantMessage({
   content,
   timestamp,
   isStreaming,
+  totalTableRows,
+  totalRoadmapStages,
+  thinkingSteps,
   onChipClick,
   onVoice,
   isSpeaking,
@@ -419,24 +1022,32 @@ function AssistantMessage({
   content: string;
   timestamp: Date;
   isStreaming: boolean;
+  totalTableRows?: number;
+  totalRoadmapStages?: number;
+  thinkingSteps?: ThinkingStepDisplay[];
   onChipClick?: (label: string) => void;
   onVoice: () => void;
   isSpeaking: boolean;
 }) {
   return (
-    <div className="chat-bubble-enter flex flex-col" style={{ gap: '8px' }}>
-      {/* Avatar + name + time — 24px avatar, 8px gap (Figma 18:631) */}
+    <div className="chat-bubble-enter flex flex-col" style={{ gap: '14px' }}>
+      {/* Avatar + name + time */}
       <div className="flex items-center" style={{ gap: '8px' }}>
         <div
-          className="shrink-0 overflow-hidden"
-          style={{
-            width: '24px',
-            height: '24px',
-            borderRadius: 'var(--radius-full)',
-            background: 'var(--color-pelorous-50)',
-            border: '1px solid var(--alpha-light-50)',
-          }}
-        />
+          className="shrink-0 flex items-center justify-center"
+          style={{ width: '18px' }}
+        >
+          <div
+            className="shrink-0 overflow-hidden"
+            style={{
+              width: '24px',
+              height: '24px',
+              borderRadius: 'var(--radius-full)',
+              background: 'var(--color-pelorous-50)',
+              border: '1px solid var(--alpha-light-50)',
+            }}
+          />
+        </div>
         <span
           className="font-medium"
           style={{
@@ -461,23 +1072,17 @@ function AssistantMessage({
         </span>
       </div>
 
-      {/* Body text — indented 32px to align with name (24px avatar + 8px gap) */}
-      <div style={{ paddingLeft: '32px' }}>
+      {/* Body text */}
+      <div>
+        {thinkingSteps && thinkingSteps.length > 0 && (
+          <ThinkingStepsDisplay steps={thinkingSteps} />
+        )}
+        {thinkingSteps && thinkingSteps.length > 0 && content && (
+          <div className="chat-divider" />
+        )}
         {content ? (
-          <p
-            className="whitespace-pre-wrap"
-            style={{
-              fontFamily: 'var(--font-primary)',
-              fontSize: 'var(--body-3-size)',
-              lineHeight: '28px',
-              letterSpacing: 'var(--body-3-spacing)',
-              color: 'var(--alpha-light-900)',
-            }}
-          >
-            {content}
-            {isStreaming && <span className="typing-cursor" />}
-          </p>
-        ) : isStreaming ? (
+          <RichContent content={content} isStreaming={isStreaming} totalTableRows={totalTableRows} totalRoadmapStages={totalRoadmapStages} />
+        ) : isStreaming && !(thinkingSteps && thinkingSteps.length > 0 && !thinkingSteps.every((s) => s.status === 'done')) ? (
           <div className="typing-indicator">
             <span />
             <span />
@@ -543,13 +1148,28 @@ function AssistantMessage({
 
 /* ── Main Component ── */
 
-export default function ChatPage({ initialMessage, onNewTask }: ChatPageProps) {
+function countStructuredElements(text: string): { tableRows: number; roadmapStages: number } {
+  const blocks = parseContentBlocks(text);
+  let tableRows = 0;
+  let roadmapStages = 0;
+  for (const b of blocks) {
+    if (b.type === 'table' && !tableRows) tableRows = b.rows.length;
+    if (b.type === 'roadmap' && !roadmapStages) roadmapStages = b.stages.length;
+  }
+  return { tableRows, roadmapStages };
+}
+
+export default function ChatPage({ initialMessage, simulatedResponse, simulatedSteps, simulatedImage, onNewTask }: ChatPageProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [totalTableRows, setTotalTableRows] = useState(0);
+  const [totalRoadmapStages, setTotalRoadmapStages] = useState(0);
+  const [thinkingSteps, setThinkingSteps] = useState<ThinkingStepDisplay[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const hasInitialized = useRef(false);
   const messagesRef = useRef<Message[]>([]);
+  const [showScrollDown, setShowScrollDown] = useState(false);
 
   // Voice / audio player state
   const [voiceContent, setVoiceContent] = useState<string | null>(null);
@@ -666,6 +1286,17 @@ export default function ChatPage({ initialMessage, onNewTask }: ChatPageProps) {
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
+  useEffect(() => {
+    const el = scrollAreaRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+      setShowScrollDown(distanceFromBottom > 120);
+    };
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => el.removeEventListener('scroll', onScroll);
+  }, []);
+
   const sendMessage = useCallback(async (text: string) => {
     const userMessage: Message = {
       role: 'user',
@@ -717,13 +1348,100 @@ export default function ChatPage({ initialMessage, onNewTask }: ChatPageProps) {
     }
   }, []);
 
+  const simulateTyping = useCallback(async (question: string, answer: string, steps?: ThinkingStep[], imageUrl?: string) => {
+    const userMsg: Message = { role: 'user', content: question, timestamp: new Date(), imageUrl };
+    const assistantMsg: Message = { role: 'assistant', content: '', timestamp: new Date() };
+    setMessages([userMsg, assistantMsg]);
+    const counts = countStructuredElements(answer);
+    setTotalTableRows(counts.tableRows);
+    setTotalRoadmapStages(counts.roadmapStages);
+    setIsStreaming(true);
+
+    if (steps && steps.length > 0) {
+      const allSteps: ThinkingStepDisplay[] = steps.map((s, i) => ({
+        label: s.label,
+        status: (i === 0 ? 'idle' : 'pending') as StepStatus,
+      }));
+      setThinkingSteps(allSteps);
+
+      await new Promise((r) => setTimeout(r, 1200));
+
+      for (let si = 1; si < steps.length; si++) {
+        setThinkingSteps((prev) =>
+          prev.map((s, idx) => {
+            if (idx === 0) return { ...s, status: 'idle' as StepStatus };
+            return {
+              ...s,
+              status: idx < si ? 'done' : idx === si ? 'active' : 'pending',
+            };
+          }),
+        );
+        await new Promise((r) => setTimeout(r, 1500 + Math.random() * 800));
+      }
+      setThinkingSteps((prev) => prev.map((s) => ({ ...s, status: 'done' as StepStatus })));
+      await new Promise((r) => setTimeout(r, 600));
+    }
+
+    const lines = answer.split('\n');
+    let accumulated = '';
+    let inRoadmap = false;
+
+    const flush = (text: string) => {
+      accumulated = text;
+      const snap = accumulated;
+      setMessages((prev) => {
+        const updated = [...prev];
+        updated[updated.length - 1] = { ...updated[updated.length - 1], content: snap };
+        return updated;
+      });
+    };
+
+    for (let li = 0; li < lines.length; li++) {
+      const line = lines[li];
+      const trimmed = line.trim();
+      const isTableLine = trimmed.startsWith('|') && trimmed.endsWith('|');
+      const isTableSep = /^\|[\s-:|]+\|$/.test(trimmed);
+
+      if (trimmed === '[ROADMAP]') {
+        inRoadmap = true;
+        flush(accumulated + (li > 0 ? '\n' : '') + line);
+        await new Promise((r) => setTimeout(r, 100));
+      } else if (trimmed === '[/ROADMAP]') {
+        inRoadmap = false;
+        flush(accumulated + (li > 0 ? '\n' : '') + line);
+        await new Promise((r) => setTimeout(r, 60));
+      } else if (inRoadmap) {
+        flush(accumulated + '\n' + line);
+        await new Promise((r) => setTimeout(r, 500 + Math.random() * 200));
+      } else if (isTableLine || isTableSep) {
+        flush(accumulated + (li > 0 ? '\n' : '') + line);
+        await new Promise((r) => setTimeout(r, isTableSep ? 60 : 350 + Math.random() * 150));
+      } else {
+        const prefix = li > 0 ? '\n' : '';
+        const words = line.split(/(\s+)/);
+        for (let wi = 0; wi < words.length; wi++) {
+          const leading = wi === 0 ? prefix : '';
+          flush(accumulated + leading + words[wi]);
+          await new Promise((r) => setTimeout(r, 18 + Math.random() * 22));
+        }
+      }
+    }
+    setTotalTableRows(0);
+    setTotalRoadmapStages(0);
+    setIsStreaming(false);
+  }, []);
+
   // Send initial message on mount
   useEffect(() => {
     if (initialMessage && !hasInitialized.current) {
       hasInitialized.current = true;
-      sendMessage(initialMessage);
+      if (simulatedResponse) {
+        simulateTyping(initialMessage, simulatedResponse, simulatedSteps, simulatedImage);
+      } else {
+        sendMessage(initialMessage);
+      }
     }
-  }, [initialMessage, sendMessage]);
+  }, [initialMessage, simulatedResponse, simulatedSteps, simulatedImage, sendMessage, simulateTyping]);
 
   // Is this the first AI response (show chips only on last assistant message)?
   const lastAssistantIdx = (() => {
@@ -768,11 +1486,11 @@ export default function ChatPage({ initialMessage, onNewTask }: ChatPageProps) {
         </div>
       </div>
 
-      {/* ── Messages scroll area ── */}
+      {/* ── Messages scroll area — extends behind the input ── */}
       <div
         ref={scrollAreaRef}
         className="flex-1 overflow-y-auto min-h-0 smooth-scroll flex flex-col items-center"
-        style={{ paddingTop: '24px', paddingBottom: '16px' }}
+        style={{ paddingTop: '24px', paddingBottom: '124px' }}
       >
         <div
           className="flex flex-col w-full"
@@ -785,13 +1503,16 @@ export default function ChatPage({ initialMessage, onNewTask }: ChatPageProps) {
         >
           {messages.map((msg, i) =>
             msg.role === 'user' ? (
-              <UserBubble key={i} content={msg.content} />
+              <UserBubble key={i} content={msg.content} imageUrl={msg.imageUrl} />
             ) : (
               <AssistantMessage
                 key={i}
                 content={msg.content}
                 timestamp={msg.timestamp}
                 isStreaming={isStreaming && i === messages.length - 1}
+                totalTableRows={isStreaming && i === messages.length - 1 ? totalTableRows : undefined}
+                totalRoadmapStages={isStreaming && i === messages.length - 1 ? totalRoadmapStages : undefined}
+                thinkingSteps={i === messages.length - 1 ? thinkingSteps : undefined}
                 onChipClick={
                   i === lastAssistantIdx && !isStreaming
                     ? (label) => sendMessage(label)
@@ -806,38 +1527,62 @@ export default function ChatPage({ initialMessage, onNewTask }: ChatPageProps) {
         </div>
       </div>
 
-      {/* ── Audio player — floats above input when voice is active ── */}
-      {voiceContent && (
-        <div className="shrink-0 flex justify-center" style={{ paddingLeft: '24px', paddingRight: '24px', paddingBottom: '8px' }}>
-          <AudioPlayer
-            isPlaying={voicePlaying}
-            onPause={handleVoicePause}
-            elapsed={voiceElapsed}
-            duration={voiceDuration}
-            volume={voiceVolume}
-            onVolumeChange={handleVolumeChange}
-            rate={voiceRate}
-            onRateChange={handleRateChange}
-          />
-        </div>
-      )}
-
-      {/* ── Bottom input — Figma: centered 704px, ~19px from bottom ── */}
+      {/* ── Bottom overlay: audio player + input (floats over scroll area) ── */}
       <div
-        className="shrink-0 flex flex-col items-center"
-        style={{
-          paddingLeft: '24px',
-          paddingRight: '24px',
-          paddingBottom: '19px',
-          paddingTop: '8px',
-        }}
+        className="absolute bottom-0 left-0 right-0 flex flex-col items-end pointer-events-none"
+        style={{ zIndex: 10 }}
       >
-        <div className="w-full" style={{ maxWidth: '704px' }}>
-          <ChatInput
-            onSubmit={sendMessage}
-            disabled={isStreaming}
-            placeholder="How can I help you today?"
-          />
+        {/* ── Fade gradient ── */}
+        <div
+          className="w-full pointer-events-none"
+          style={{
+            height: '80px',
+            background: 'linear-gradient(to bottom, transparent, white)',
+          }}
+        />
+        {/* ── Audio player — floats above input when voice is active ── */}
+        {voiceContent && (
+          <div className="flex justify-center pointer-events-auto" style={{ paddingLeft: '24px', paddingRight: '24px', paddingBottom: '8px' }}>
+            <AudioPlayer
+              isPlaying={voicePlaying}
+              onPause={handleVoicePause}
+              elapsed={voiceElapsed}
+              duration={voiceDuration}
+              volume={voiceVolume}
+              onVolumeChange={handleVolumeChange}
+              rate={voiceRate}
+              onRateChange={handleRateChange}
+            />
+          </div>
+        )}
+
+        <div
+          className="flex flex-col items-center w-full relative pointer-events-auto"
+          style={{
+            paddingLeft: '24px',
+            paddingRight: '24px',
+            paddingBottom: '19px',
+            paddingTop: '8px',
+            background: 'white',
+          }}
+        >
+          {/* ── Scroll-to-bottom button (absolute, above input) ── */}
+          {showScrollDown && (
+            <button
+              onClick={scrollToBottom}
+              className="scroll-to-bottom-btn"
+              aria-label="Scroll to bottom"
+            >
+              <ArrowDownIcon className="w-5 h-5" color="var(--alpha-light-400)" />
+            </button>
+          )}
+          <div className="w-full" style={{ maxWidth: '704px' }}>
+            <ChatInput
+              onSubmit={sendMessage}
+              disabled={isStreaming}
+              placeholder="How can I help you today?"
+            />
+          </div>
         </div>
       </div>
     </div>
