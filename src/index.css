@@ -35,6 +35,9 @@
   --alpha-pelorous-50: rgba(0, 175, 208, 0.06);  /* #00afd00f */
   --alpha-pelorous-200: rgba(0, 175, 208, 0.2);  /* #00afd033 */
 
+  /* Skill green */
+  --color-skill-green: #2E8B57;
+
   /* ── Figma Typography Tokens ── */
   --font-primary: 'Instrument Sans', sans-serif;
   --weight-regular: 400;
@@ -864,6 +867,11 @@ input, button, select, textarea, [contenteditable] {
 }
 
 /* ── Thinking steps animations ── */
+@keyframes thinking-spinner-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 .thinking-gradient-ring {
   border-radius: 50%;
   position: relative;
@@ -906,8 +914,35 @@ input, button, select, textarea, [contenteditable] {
   100% { background-position: -100% 0; }
 }
 
+.thinking-gradient-ring-skill {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--color-skill-green) 40%,
+    transparent 80%
+  );
+  background-size: 200% 100%;
+}
+
+.thinking-shimmer-text-skill {
+  background: linear-gradient(
+    90deg,
+    #2E8B57 0%,
+    #3CB371 20%,
+    #66CDAA 40%,
+    #3CB371 60%,
+    #2E8B57 80%,
+    #228B22 100%
+  );
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: thinking-shimmer-flow 2.6s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .thinking-shimmer-text {
+  .thinking-shimmer-text,
+  .thinking-shimmer-text-skill {
     animation: none;
     background: none;
     -webkit-background-clip: unset;
@@ -933,6 +968,16 @@ input, button, select, textarea, [contenteditable] {
   to { opacity: 1; transform: translateX(0); }
 }
 
+.thinking-step-line-grow {
+  transform-origin: top;
+  animation: thinking-line-grow 600ms ease-out both;
+}
+
+@keyframes thinking-line-grow {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+
 .thinking-steps-body {
   display: grid;
   grid-template-rows: 1fr;
@@ -945,6 +990,10 @@ input, button, select, textarea, [contenteditable] {
 
 .thinking-steps-body.thinking-steps-collapsed {
   grid-template-rows: 0fr;
+}
+
+.thinking-steps-display path {
+  color: var(--alpha-light-600);
 }
 
 /* ── Roadmap stage animations ── */

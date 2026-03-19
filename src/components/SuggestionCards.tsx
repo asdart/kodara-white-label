@@ -21,33 +21,48 @@ export const simulatedResponses: Record<string, string> = {
 
 export interface ThinkingStep {
   label: string;
+  children?: string[];
 }
 
-export const simulatedThinkingSteps: Record<string, ThinkingStep[]> = {
-  [suggestions[0]]: [
-    { label: 'Analyzing hunger signal patterns from client research...' },
-    { label: 'Building side-by-side comparison of physical vs. emotional cues...' },
-    { label: 'Cross-referencing body location and craving data...' },
-    { label: 'Adding practical self-check prompts...' },
-  ],
-  [suggestions[1]]: [
-    { label: "Reviewing Leanne's client transformation stages..." },
-    { label: 'Loading milestone markers from food prison to food freedom...' },
-    { label: 'Ordering the internal shifts by sequence and dependency...' },
-    { label: 'Preparing reflection prompts for each stage...' },
-  ],
-  [suggestions[2]]: [
-    { label: 'Scanning photo for food items and portion sizes...' },
-    { label: 'Estimating macronutrient content from visual cues...' },
-    { label: 'Cross-referencing with USDA nutrition database...' },
-    { label: 'Building personalized meal assessment...' },
-  ],
-  [suggestions[3]]: [
-    { label: 'Estimating expected timelines from coaching data...' },
-    { label: 'Breaking the journey into 2-week, 6-week, and 3-month milestones...' },
-    { label: 'Differentiating skill-based coaching from traditional therapy...' },
-    { label: 'Compiling quick-win strategies for early momentum...' },
-  ],
+export interface ThinkingStepsConfig {
+  header: string;
+  steps: ThinkingStep[];
+}
+
+export const simulatedThinkingSteps: Record<string, ThinkingStepsConfig> = {
+  [suggestions[0]]: {
+    header: 'Updated to do list for a hunger patterns question',
+    steps: [
+      { label: 'Skill', children: ['Launching skill: Hunger pattern analyzer'] },
+      { label: 'Analyzing hunger signal patterns', children: ['Reviewing client research on physical vs. emotional cues', 'Cross-referencing body location and craving data'] },
+      { label: 'Building comparison framework', children: ['Creating side-by-side breakdown of hunger types', 'Adding practical self-check prompts'] },
+    ],
+  },
+  [suggestions[1]]: {
+    header: 'Updated to do list for a progress stages question',
+    steps: [
+      { label: 'Skill', children: ['Launching skill: Journey roadmap builder'] },
+      { label: "Reviewing transformation stages", children: ["Loading Leanne's client milestone data", 'Ordering internal shifts by sequence and dependency'] },
+      { label: 'Building the roadmap', children: ['Mapping food prison to food freedom stages', 'Preparing reflection prompts for each stage'] },
+    ],
+  },
+  [suggestions[2]]: {
+    header: 'Updated to do list for a meal analyzer question',
+    steps: [
+      { label: 'Skill', children: ['Launching skill: Meal analyzer'] },
+      { label: 'Identifying ingredients and portion sizes', children: ['Building a list of ingredients', 'Creating charts for each portion sizes'] },
+      { label: 'Estimating macronutrient composition', children: ['Estimating macronutrient content from visual cues', 'Cross-referencing with USDA nutrition database'] },
+      { label: 'Building personalized meal assessment' },
+    ],
+  },
+  [suggestions[3]]: {
+    header: 'Updated to do list for a mindset change question',
+    steps: [
+      { label: 'Skill', children: ['Launching skill: Coaching timeline estimator'] },
+      { label: 'Estimating expected timelines', children: ['Analyzing coaching data for typical progress rates', 'Breaking into 2-week, 6-week, and 3-month milestones'] },
+      { label: 'Differentiating approaches', children: ['Comparing skill-based coaching vs. traditional therapy', 'Compiling quick-win strategies for early momentum'] },
+    ],
+  },
 };
 
 export const simulatedImages: Record<string, string> = {

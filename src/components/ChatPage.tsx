@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import ChatInput from './ChatInput';
 import { PenSparkleIcon, SuggestionArrowIcon, CopyIcon, ThumbsUpIcon, ThumbsDownIcon, VoiceIcon, FeedbackChatIcon, MicIcon, PauseIcon, PlayIcon, ArrowDownIcon } from './Icons';
 import { streamChat, type ChatMessage as APIChatMessage } from '../services/openai';
-import type { ThinkingStep } from './SuggestionCards';
+import type { ThinkingStepsConfig } from './SuggestionCards';
 
 /* ── Types ── */
 interface Message {
@@ -15,7 +15,7 @@ interface Message {
 interface ChatPageProps {
   initialMessage?: string;
   simulatedResponse?: string;
-  simulatedSteps?: ThinkingStep[];
+  simulatedSteps?: ThinkingStepsConfig;
   simulatedImage?: string;
   onNewTask?: () => void;
 }
@@ -829,41 +829,117 @@ function AudioPlayer({
 
 type StepStatus = 'idle' | 'pending' | 'active' | 'done';
 
-interface ThinkingStepDisplay {
+interface ThinkingSubStepDisplay {
   label: string;
   status: StepStatus;
 }
 
-function ThinkingStepIcon({ status }: { status: StepStatus }) {
+interface ThinkingStepDisplay {
+  label: string;
+  status: StepStatus;
+  isSkill: boolean;
+  children: ThinkingSubStepDisplay[];
+}
+
+function ThinkingStepIcon({ status, isSkill }: { status: StepStatus; isSkill?: boolean }) {
+  const isDone = status === 'done';
+  const isActive = status === 'active';
+  const isPending = status === 'pending';
+
+  const color = isSkill ? 'var(--color-skill-green)' : 'var(--alpha-light-400)';
+  const checkColor = isSkill ? '#fff' : 'var(--alpha-light-600)';
+
   return (
-    <div style={{ width: '16px', height: '16px', flexShrink: 0, position: 'relative' }}>
-      <svg
-        width="16" height="16" viewBox="0 0 16 16" fill="none"
-        style={{ position: 'absolute', inset: 0, opacity: status === 'done' ? 1 : 0, transition: 'opacity 500ms ease' }}
-      >
-        <circle cx="8" cy="8" r="7.25" stroke="var(--alpha-light-200)" strokeWidth="1.5" />
-        <path d="M5 8.25L7 10.25L11 6" stroke="var(--alpha-light-400)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-      <div
-        className="thinking-gradient-ring"
-        style={{ position: 'absolute', inset: 0, opacity: status === 'active' ? 1 : 0, transition: 'opacity 500ms ease' }}
-      />
+    <div style={{ width: '20px', height: '20px', flexShrink: 0, position: 'relative' }}>
+      {/* Pending: small gray dot */}
       <div
         style={{
           position: 'absolute', inset: 0,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          opacity: status === 'pending' ? 1 : 0, transition: 'opacity 500ms ease',
+          opacity: isPending ? 1 : 0, transition: 'opacity 400ms ease',
         }}
       >
         <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--alpha-light-100)' }} />
       </div>
+
+      {/* Active spinner + Done check transition */}
+      <svg
+        width="20" height="20" viewBox="0 0 20 20" fill="none"
+        style={{
+          position: 'absolute', inset: 0,
+          opacity: isActive || isDone ? 1 : 0,
+          transition: 'opacity 400ms ease',
+        }}
+      >
+        {/* Skill done: filled green background */}
+        {isSkill && (
+          <circle
+            cx="10" cy="10" r="10"
+            fill="var(--color-skill-green)"
+            style={{
+              opacity: isDone ? 1 : 0,
+              transform: isDone ? 'scale(1)' : 'scale(0)',
+              transformOrigin: 'center',
+              transition: 'opacity 400ms ease, transform 400ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+            }}
+          />
+        )}
+
+        {/* Spinning circle track (active) */}
+        <circle
+          cx="10" cy="10" r="8"
+          stroke={color}
+          strokeWidth="1.5"
+          fill="none"
+          strokeLinecap="round"
+          strokeDasharray="50.27"
+          strokeDashoffset={isDone ? '0' : '37.7'}
+          style={{
+            transformOrigin: 'center',
+            animation: isActive ? 'thinking-spinner-rotate 1s linear infinite' : 'none',
+            opacity: isActive ? 1 : 0,
+            transition: 'opacity 300ms ease, stroke-dashoffset 400ms ease',
+          }}
+        />
+
+        {/* Non-skill done: small filled dot */}
+        {!isSkill && (
+          <circle
+            cx="10" cy="10" r="3"
+            fill="var(--alpha-light-600)"
+            style={{
+              opacity: isDone ? 1 : 0,
+              transform: isDone ? 'scale(1)' : 'scale(0)',
+              transformOrigin: 'center',
+              transition: 'opacity 300ms ease 150ms, transform 400ms cubic-bezier(0.34, 1.56, 0.64, 1) 150ms',
+            }}
+          />
+        )}
+
+        {/* Checkmark (draws in on done) */}
+        {isSkill && (
+          <path
+            d="M6 10.5L8.75 13.25L14 7"
+            stroke={checkColor}
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill="none"
+            strokeDasharray="14"
+            strokeDashoffset={isDone ? '0' : '14'}
+            style={{
+              transition: 'stroke-dashoffset 400ms ease 200ms',
+            }}
+          />
+        )}
+      </svg>
     </div>
   );
 }
 
-function ThinkingStepsDisplay({ steps }: { steps: ThinkingStepDisplay[] }) {
+function ThinkingStepsDisplay({ steps, header }: { steps: ThinkingStepDisplay[]; header?: string }) {
   const [collapsed, setCollapsed] = useState(false);
-  const allDone = steps.every((s) => s.status === 'done');
+  const allDone = steps.length > 0 && steps.every((s) => s.status === 'done');
   const prevAllDoneRef = useRef(false);
 
   useEffect(() => {
@@ -876,46 +952,28 @@ function ThinkingStepsDisplay({ steps }: { steps: ThinkingStepDisplay[] }) {
 
   if (steps.length === 0) return null;
 
-  const idleStep = steps[0];
-  const processingSteps = steps.slice(1);
-  const processingDone = processingSteps.length > 0 && processingSteps.every((s) => s.status === 'done');
-
-  const hasVisibleSteps = processingSteps.some((s) => s.status !== 'pending') || allDone;
+  const hasVisibleSteps = steps.some((s) => s.status !== 'pending');
 
   return (
-    <div style={{ marginBottom: '14px' }}>
-      {/* Idle header — always visible, same appearance */}
-      {idleStep && (
+    <div className="thinking-steps-display" style={{ marginBottom: '14px' }}>
+      {/* Header — always visible */}
+      {header && (
         <div className="thinking-step-enter">
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '6px',
+              gap: '8px',
               cursor: allDone ? 'pointer' : 'default',
               paddingBottom: hasVisibleSteps && !collapsed ? '16px' : '0',
               transition: 'padding 400ms ease',
             }}
             onClick={allDone ? () => setCollapsed((c) => !c) : undefined}
           >
-            <span
-              className={idleStep.status === 'idle' ? 'thinking-shimmer-text' : undefined}
-              style={{
-                fontFamily: 'var(--font-primary)',
-                fontSize: 'var(--body-3-size)',
-                lineHeight: 'var(--body-3-line)',
-                color: 'var(--alpha-light-600)',
-                WebkitTextFillColor: idleStep.status === 'idle' ? 'transparent' : undefined,
-                fontWeight: 500,
-                transition: 'color 500ms ease, -webkit-text-fill-color 500ms ease',
-              }}
-            >
-              {idleStep.label}
-            </span>
             {allDone && (
               <svg
-                width="12"
-                height="12"
+                width="20"
+                height="20"
                 viewBox="0 0 12 12"
                 fill="none"
                 style={{
@@ -924,9 +982,23 @@ function ThinkingStepsDisplay({ steps }: { steps: ThinkingStepDisplay[] }) {
                   transition: 'transform 300ms ease',
                 }}
               >
-                <path d="M3.5 4.5L6 7L8.5 4.5" stroke="var(--alpha-light-400)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M3.5 4.5L6 7L8.5 4.5" stroke="var(--alpha-light-400)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ height: '3px' }} />
               </svg>
             )}
+            <span
+              className={!allDone ? 'thinking-shimmer-text' : undefined}
+              style={{
+                fontFamily: 'var(--font-primary)',
+                fontSize: 'var(--body-3-size)',
+                lineHeight: 'var(--body-3-line)',
+                color: 'var(--alpha-light-600)',
+                WebkitTextFillColor: !allDone ? 'transparent' : undefined,
+                fontWeight: 500,
+                transition: 'color 500ms ease, -webkit-text-fill-color 500ms ease',
+              }}
+            >
+              {header}
+            </span>
           </div>
         </div>
       )}
@@ -934,66 +1006,129 @@ function ThinkingStepsDisplay({ steps }: { steps: ThinkingStepDisplay[] }) {
       {/* Collapsible steps body */}
       <div className={`thinking-steps-body${collapsed ? ' thinking-steps-collapsed' : ''}`}>
         <div style={{ paddingLeft: '1px' }}>
-          {processingSteps.map((step, si) => {
+          {steps.map((step, si) => {
             if (step.status === 'pending') return null;
             return (
-              <div key={si} className="thinking-step-enter" style={{ animationDelay: `${si * 250}ms` }}>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '16px', flexShrink: 0 }}>
-                    <div style={{ height: '20px', display: 'flex', alignItems: 'center' }}>
-                      <ThinkingStepIcon status={step.status} />
-                    </div>
-                    <div
-                      style={{
-                        width: '1.5px',
-                        height: '13px',
-                        background: step.status === 'done' ? 'var(--alpha-light-200)' : 'var(--alpha-light-100)',
-                        transition: 'background 500ms ease',
-                      }}
-                    />
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1, height: '20px' }}>
+              <div key={si} className="thinking-step-enter" style={{ animationDelay: `${si * 250}ms`, paddingBottom: '12px' }}>
+                {/* Top-level step row */}
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <ThinkingStepIcon status={step.status} isSkill={step.isSkill} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <span
-                      className={step.status === 'active' ? 'thinking-shimmer-text' : undefined}
                       style={{
                         fontFamily: 'var(--font-primary)',
                         fontSize: 'var(--body-3-size)',
                         lineHeight: 'var(--body-3-line)',
-                        color: step.status === 'done'
-                          ? 'var(--alpha-light-600)'
-                          : step.status === 'active'
+                        color: step.isSkill
+                          ? 'var(--color-skill-green)'
+                          : step.status === 'done' || step.status === 'active'
                             ? 'var(--alpha-light-600)'
                             : 'var(--alpha-light-200)',
-                        WebkitTextFillColor: step.status === 'active' ? 'transparent' : undefined,
-                        fontWeight: step.status === 'done' ? 400 : 500,
-                        transition: 'color 500ms ease, -webkit-text-fill-color 500ms ease',
+                        fontWeight: step.isSkill ? 600 : 500,
+                        transition: 'color 500ms ease',
                       }}
                     >
                       {step.label}
                     </span>
+                    {step.status === 'done' && (
+                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0 }}>
+                        <path d="M2.5 6L4.75 8.25L9.5 3.5" stroke="var(--alpha-light-400)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    )}
                   </div>
                 </div>
+
+                {/* Sub-steps with vertical bar indent + bullets */}
+                {step.children.length > 0 && (
+                  <div style={{ paddingLeft: '9px', marginTop: '8px' }}>
+                    {step.children.map((sub, ci) => {
+                      if (sub.status === 'pending') return null;
+                      return (
+                        <div
+                          key={ci}
+                          style={{
+                            display: 'flex',
+                            gap: '20px',
+                            animationDelay: `${(si * 2 + ci) * 150}ms`,
+                          }}
+                        >
+                          <div
+                            className="thinking-step-line-grow"
+                            style={{
+                              width: '1px',
+                              flexShrink: 0,
+                              borderRadius: '2px',
+                              background: 'var(--alpha-light-100)',
+                              height: '24px',
+                              animationDelay: `${(si * 2 + ci) * 150}ms`,
+                            }}
+                          />
+                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flex: 1 }}>
+                            <div
+                              className="thinking-step-enter"
+                              style={{
+                                width: '4px',
+                                height: '4px',
+                                borderRadius: '50%',
+                                flexShrink: 0,
+                                background: 'var(--alpha-light-400)',
+                                animationDelay: `${(si * 2 + ci) * 150}ms`,
+                              }}
+                            />
+                            <span
+                              className="thinking-step-enter"
+                              style={{
+                                position: 'relative',
+                                fontFamily: 'var(--font-primary)',
+                                fontSize: 'var(--body-3-size)',
+                                lineHeight: '24px',
+                                color: 'var(--alpha-light-600)',
+                                fontWeight: 400,
+                                transition: 'color 500ms ease',
+                                animationDelay: `${(si * 2 + ci) * 150}ms`,
+                              }}
+                            >
+                              {sub.label}
+                              <span
+                                aria-hidden
+                                style={{
+                                  position: 'absolute',
+                                  left: 0,
+                                  top: '50%',
+                                  transform: 'translateY(-50%)',
+                                  height: '1px',
+                                  background: 'var(--alpha-light-600)',
+                                  width: !step.isSkill && sub.status === 'done' ? '100%' : '0%',
+                                  transition: 'width 400ms ease',
+                                }}
+                              />
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             );
           })}
-
-          {/* Done row */}
-          {processingDone && (
-            <div className="thinking-step-enter" style={{ display: 'flex', gap: '8px' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '16px', flexShrink: 0 }}>
-                <div style={{ height: '20px', display: 'flex', alignItems: 'center' }}>
-                  <ThinkingStepIcon status="done" />
+          {/* Final "Done" step — appears after all steps complete */}
+          {allDone && (
+            <div className="thinking-step-enter" style={{ animationDelay: `${steps.length * 250}ms` }}>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <div style={{ width: '20px', height: '20px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <circle cx="10" cy="10" r="9" stroke="var(--alpha-light-200)" strokeWidth="1.5" />
+                    <path d="M6 10.5L8.75 13.25L14 7" stroke="var(--alpha-light-600)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
                 </div>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', height: '20px' }}>
                 <span
                   style={{
                     fontFamily: 'var(--font-primary)',
                     fontSize: 'var(--body-3-size)',
                     lineHeight: 'var(--body-3-line)',
                     color: 'var(--alpha-light-600)',
-                    fontWeight: 400,
+                    fontWeight: 600,
                   }}
                 >
                   Done
@@ -1015,6 +1150,7 @@ function AssistantMessage({
   totalTableRows,
   totalRoadmapStages,
   thinkingSteps,
+  thinkingHeader,
   onChipClick,
   onVoice,
   isSpeaking,
@@ -1025,6 +1161,7 @@ function AssistantMessage({
   totalTableRows?: number;
   totalRoadmapStages?: number;
   thinkingSteps?: ThinkingStepDisplay[];
+  thinkingHeader?: string;
   onChipClick?: (label: string) => void;
   onVoice: () => void;
   isSpeaking: boolean;
@@ -1032,7 +1169,7 @@ function AssistantMessage({
   return (
     <div className="chat-bubble-enter flex flex-col" style={{ gap: '14px' }}>
       {/* Avatar + name + time */}
-      <div className="flex items-center" style={{ gap: '8px' }}>
+      <div className="flex items-center" style={{ gap: '10px' }}>
         <div
           className="shrink-0 flex items-center justify-center"
           style={{ width: '18px' }}
@@ -1075,7 +1212,7 @@ function AssistantMessage({
       {/* Body text */}
       <div>
         {thinkingSteps && thinkingSteps.length > 0 && (
-          <ThinkingStepsDisplay steps={thinkingSteps} />
+          <ThinkingStepsDisplay steps={thinkingSteps} header={thinkingHeader} />
         )}
         {thinkingSteps && thinkingSteps.length > 0 && content && (
           <div className="chat-divider" />
@@ -1165,10 +1302,13 @@ export default function ChatPage({ initialMessage, simulatedResponse, simulatedS
   const [totalTableRows, setTotalTableRows] = useState(0);
   const [totalRoadmapStages, setTotalRoadmapStages] = useState(0);
   const [thinkingSteps, setThinkingSteps] = useState<ThinkingStepDisplay[]>([]);
+  const [thinkingHeader, setThinkingHeader] = useState<string | undefined>();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const hasInitialized = useRef(false);
   const messagesRef = useRef<Message[]>([]);
+  const abortRef = useRef<AbortController | null>(null);
+  const cancelledRef = useRef(false);
   const [showScrollDown, setShowScrollDown] = useState(false);
 
   // Voice / audio player state
@@ -1297,7 +1437,22 @@ export default function ChatPage({ initialMessage, simulatedResponse, simulatedS
     return () => el.removeEventListener('scroll', onScroll);
   }, []);
 
+  const stopStreaming = useCallback(() => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    cancelledRef.current = true;
+    setIsStreaming(false);
+    setThinkingSteps([]);
+    setThinkingHeader(undefined);
+    setTotalTableRows(0);
+    setTotalRoadmapStages(0);
+  }, []);
+
   const sendMessage = useCallback(async (text: string) => {
+    cancelledRef.current = false;
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     const userMessage: Message = {
       role: 'user',
       content: text,
@@ -1320,7 +1475,7 @@ export default function ChatPage({ initialMessage, simulatedResponse, simulatedS
 
     try {
       let fullContent = '';
-      for await (const chunk of streamChat(apiMessages)) {
+      for await (const chunk of streamChat(apiMessages, controller.signal)) {
         fullContent += chunk;
         setMessages((prev) => {
           const updated = [...prev];
@@ -1332,6 +1487,7 @@ export default function ChatPage({ initialMessage, simulatedResponse, simulatedS
         });
       }
     } catch (error) {
+      if (controller.signal.aborted) return;
       console.error('Chat error:', error);
       const errMessage =
         error instanceof Error ? error.message : 'Sorry, I encountered an error. Please try again.';
@@ -1344,11 +1500,13 @@ export default function ChatPage({ initialMessage, simulatedResponse, simulatedS
         return updated;
       });
     } finally {
+      abortRef.current = null;
       setIsStreaming(false);
     }
   }, []);
 
-  const simulateTyping = useCallback(async (question: string, answer: string, steps?: ThinkingStep[], imageUrl?: string) => {
+  const simulateTyping = useCallback(async (question: string, answer: string, stepsConfig?: ThinkingStepsConfig, imageUrl?: string) => {
+    cancelledRef.current = false;
     const userMsg: Message = { role: 'user', content: question, timestamp: new Date(), imageUrl };
     const assistantMsg: Message = { role: 'assistant', content: '', timestamp: new Date() };
     setMessages([userMsg, assistantMsg]);
@@ -1357,30 +1515,76 @@ export default function ChatPage({ initialMessage, simulatedResponse, simulatedS
     setTotalRoadmapStages(counts.roadmapStages);
     setIsStreaming(true);
 
-    if (steps && steps.length > 0) {
-      const allSteps: ThinkingStepDisplay[] = steps.map((s, i) => ({
+    const wait = (ms: number) => new Promise<void>((resolve) => {
+      const id = setTimeout(resolve, ms);
+      const check = setInterval(() => {
+        if (cancelledRef.current) { clearTimeout(id); clearInterval(check); resolve(); }
+      }, 50);
+    });
+
+    if (stepsConfig && stepsConfig.steps.length > 0) {
+      setThinkingHeader(stepsConfig.header);
+
+      const allSteps: ThinkingStepDisplay[] = stepsConfig.steps.map((s, i) => ({
         label: s.label,
-        status: (i === 0 ? 'idle' : 'pending') as StepStatus,
+        status: (i === 0 ? 'active' : 'pending') as StepStatus,
+        isSkill: i === 0,
+        children: (s.children ?? []).map((c) => ({ label: c, status: 'pending' as StepStatus })),
       }));
       setThinkingSteps(allSteps);
 
-      await new Promise((r) => setTimeout(r, 1200));
+      await wait(800);
 
-      for (let si = 1; si < steps.length; si++) {
+      for (let si = 0; si < stepsConfig.steps.length && !cancelledRef.current; si++) {
+        const step = stepsConfig.steps[si];
+        const children = step.children ?? [];
+
+        setThinkingSteps((prev) =>
+          prev.map((s, idx) => ({
+            ...s,
+            status: idx < si ? 'done' : idx === si ? 'active' : 'pending',
+            children: s.children.map((c) => ({
+              ...c,
+              status: idx < si ? 'done' : c.status,
+            })),
+          })),
+        );
+        await wait(600 + Math.random() * 400);
+
+        for (let ci = 0; ci < children.length && !cancelledRef.current; ci++) {
+          setThinkingSteps((prev) =>
+            prev.map((s, idx) => {
+              if (idx !== si) return s;
+              return {
+                ...s,
+                children: s.children.map((c, cIdx) => ({
+                  ...c,
+                  status: cIdx < ci ? 'done' : cIdx === ci ? 'active' : 'pending',
+                })),
+              };
+            }),
+          );
+          await wait(800 + Math.random() * 600);
+        }
+
+        if (cancelledRef.current) break;
+
         setThinkingSteps((prev) =>
           prev.map((s, idx) => {
-            if (idx === 0) return { ...s, status: 'idle' as StepStatus };
+            if (idx !== si) return s;
             return {
               ...s,
-              status: idx < si ? 'done' : idx === si ? 'active' : 'pending',
+              status: 'done' as StepStatus,
+              children: s.children.map((c) => ({ ...c, status: 'done' as StepStatus })),
             };
           }),
         );
-        await new Promise((r) => setTimeout(r, 1500 + Math.random() * 800));
+        await wait(300);
       }
-      setThinkingSteps((prev) => prev.map((s) => ({ ...s, status: 'done' as StepStatus })));
-      await new Promise((r) => setTimeout(r, 600));
+      if (!cancelledRef.current) await wait(600);
     }
+
+    if (cancelledRef.current) return;
 
     const lines = answer.split('\n');
     let accumulated = '';
@@ -1396,7 +1600,7 @@ export default function ChatPage({ initialMessage, simulatedResponse, simulatedS
       });
     };
 
-    for (let li = 0; li < lines.length; li++) {
+    for (let li = 0; li < lines.length && !cancelledRef.current; li++) {
       const line = lines[li];
       const trimmed = line.trim();
       const isTableLine = trimmed.startsWith('|') && trimmed.endsWith('|');
@@ -1405,30 +1609,32 @@ export default function ChatPage({ initialMessage, simulatedResponse, simulatedS
       if (trimmed === '[ROADMAP]') {
         inRoadmap = true;
         flush(accumulated + (li > 0 ? '\n' : '') + line);
-        await new Promise((r) => setTimeout(r, 100));
+        await wait(100);
       } else if (trimmed === '[/ROADMAP]') {
         inRoadmap = false;
         flush(accumulated + (li > 0 ? '\n' : '') + line);
-        await new Promise((r) => setTimeout(r, 60));
+        await wait(60);
       } else if (inRoadmap) {
         flush(accumulated + '\n' + line);
-        await new Promise((r) => setTimeout(r, 500 + Math.random() * 200));
+        await wait(500 + Math.random() * 200);
       } else if (isTableLine || isTableSep) {
         flush(accumulated + (li > 0 ? '\n' : '') + line);
-        await new Promise((r) => setTimeout(r, isTableSep ? 60 : 350 + Math.random() * 150));
+        await wait(isTableSep ? 60 : 350 + Math.random() * 150);
       } else {
         const prefix = li > 0 ? '\n' : '';
         const words = line.split(/(\s+)/);
-        for (let wi = 0; wi < words.length; wi++) {
+        for (let wi = 0; wi < words.length && !cancelledRef.current; wi++) {
           const leading = wi === 0 ? prefix : '';
           flush(accumulated + leading + words[wi]);
-          await new Promise((r) => setTimeout(r, 18 + Math.random() * 22));
+          await wait(18 + Math.random() * 22);
         }
       }
     }
-    setTotalTableRows(0);
-    setTotalRoadmapStages(0);
-    setIsStreaming(false);
+    if (!cancelledRef.current) {
+      setTotalTableRows(0);
+      setTotalRoadmapStages(0);
+      setIsStreaming(false);
+    }
   }, []);
 
   // Send initial message on mount
@@ -1513,6 +1719,7 @@ export default function ChatPage({ initialMessage, simulatedResponse, simulatedS
                 totalTableRows={isStreaming && i === messages.length - 1 ? totalTableRows : undefined}
                 totalRoadmapStages={isStreaming && i === messages.length - 1 ? totalRoadmapStages : undefined}
                 thinkingSteps={i === messages.length - 1 ? thinkingSteps : undefined}
+                thinkingHeader={i === messages.length - 1 ? thinkingHeader : undefined}
                 onChipClick={
                   i === lastAssistantIdx && !isStreaming
                     ? (label) => sendMessage(label)
@@ -1580,6 +1787,7 @@ export default function ChatPage({ initialMessage, simulatedResponse, simulatedS
             <ChatInput
               onSubmit={sendMessage}
               disabled={isStreaming}
+              onStop={isStreaming ? stopStreaming : undefined}
               placeholder="How can I help you today?"
             />
           </div>

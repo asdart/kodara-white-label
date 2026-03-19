@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import Sidebar, { type SidebarPage } from './Sidebar';
 import ChatInput from './ChatInput';
 import SuggestionCards, { simulatedResponses, simulatedThinkingSteps, simulatedImages } from './SuggestionCards';
-import type { ThinkingStep } from './SuggestionCards';
+import type { ThinkingStepsConfig } from './SuggestionCards';
 import MyChatsPage from './MyChatsPage';
 import ChatPage from './ChatPage';
 import ConnectorsPage from './ConnectorsPage';
@@ -16,7 +16,7 @@ export default function Dashboard() {
   const [currentPage, setCurrentPage] = useState<SidebarPage>('home');
   const [chatInitialMessage, setChatInitialMessage] = useState('');
   const [chatSimulatedResponse, setChatSimulatedResponse] = useState<string | undefined>();
-  const [chatSimulatedSteps, setChatSimulatedSteps] = useState<ThinkingStep[] | undefined>();
+  const [chatSimulatedSteps, setChatSimulatedSteps] = useState<ThinkingStepsConfig | undefined>();
   const [chatSimulatedImage, setChatSimulatedImage] = useState<string | undefined>();
   const [chatKey, setChatKey] = useState(0);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);

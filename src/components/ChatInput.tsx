@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { PlusIcon, ArrowUpIcon, SparkleSmallIcon, FilePlusIcon, ImageIcon } from './Icons';
+import { PlusIcon, ArrowUpIcon, StopIcon, SparkleSmallIcon, FilePlusIcon, ImageIcon } from './Icons';
 
 interface ChatInputProps {
   disabled?: boolean;
   onTextChange?: (text: string) => void;
   onSubmit?: (text: string) => void;
+  onStop?: () => void;
   placeholder?: string;
 }
 
@@ -14,7 +15,8 @@ const MAX_LINES = 4;
 const LINE_HEIGHT = 20;
 const MAX_TEXTAREA_HEIGHT = MAX_LINES * LINE_HEIGHT;
 
-export default function ChatInput({ disabled = false, onTextChange, onSubmit, placeholder = "How can I help you today?" }: ChatInputProps) {
+export default function ChatInput({ disabled = false, onTextChange, onSubmit, onStop, placeholder = "How can I help you today?" }: ChatInputProps) {
+  const isStopMode = disabled && !!onStop;
   const [hasText, setHasText] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [closing, setClosing] = useState(false);
@@ -204,7 +206,7 @@ export default function ChatInput({ disabled = false, onTextChange, onSubmit, pl
               border: 'none',
             }}
           >
-            <PlusIcon className="w-5 h-5" />
+            <PlusIcon className="w-5 h-5" color={disabled ? 'var(--alpha-light-200)' : undefined} />
           </button>
 
           {/* Dropdown — rendered via portal to avoid overflow clipping */}
@@ -343,13 +345,21 @@ export default function ChatInput({ disabled = false, onTextChange, onSubmit, pl
           </div>
         </div>
 
-        {/* Send button */}
-        <button className="send-btn" disabled={disabled} onClick={handleSubmit}>
+        {/* Send / Stop button */}
+        <button
+          className="send-btn"
+          disabled={disabled && !isStopMode}
+          onClick={isStopMode ? onStop : handleSubmit}
+        >
           <span className="send-btn-gradient" aria-hidden />
-          <ArrowUpIcon
-            className="w-5 h-5 relative z-10"
-            color={disabled ? 'var(--alpha-light-200)' : 'var(--alpha-light-600)'}
-          />
+          {isStopMode ? (
+            <StopIcon className="w-5 h-5 relative z-10" color="var(--alpha-light-600)" />
+          ) : (
+            <ArrowUpIcon
+              className="w-5 h-5 relative z-10"
+              color={disabled ? 'var(--alpha-light-200)' : 'var(--alpha-light-600)'}
+            />
+          )}
         </button>
       </div>
     </div>
