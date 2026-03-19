@@ -909,6 +909,19 @@ input, button, select, textarea, [contenteditable] {
   animation: thinking-shimmer-flow 2.6s ease-in-out infinite;
 }
 
+.thinking-shimmer-stroke {
+  animation: thinking-shimmer-stroke 2.6s ease-in-out infinite;
+}
+
+@keyframes thinking-shimmer-stroke {
+  0%, 100% { stroke: #9ca3af; }
+  20% { stroke: #b0b8c4; }
+  40% { stroke: #8ea4c8; }
+  50% { stroke: #a5a0c4; }
+  60% { stroke: #8ea4c8; }
+  80% { stroke: #b0b8c4; }
+}
+
 @keyframes thinking-shimmer-flow {
   0% { background-position: 100% 0; }
   100% { background-position: -100% 0; }
@@ -949,6 +962,10 @@ input, button, select, textarea, [contenteditable] {
     background-clip: unset;
     -webkit-text-fill-color: unset;
     color: var(--alpha-light-600);
+  }
+  .thinking-shimmer-stroke {
+    animation: none;
+    stroke: var(--alpha-light-400);
   }
 }
 

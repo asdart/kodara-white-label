@@ -964,13 +964,13 @@ function ThinkingStepsDisplay({ steps, header }: { steps: ThinkingStepDisplay[];
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
-              cursor: allDone ? 'pointer' : 'default',
+              cursor: hasVisibleSteps ? 'pointer' : 'default',
               paddingBottom: hasVisibleSteps && !collapsed ? '16px' : '0',
               transition: 'padding 400ms ease',
             }}
-            onClick={allDone ? () => setCollapsed((c) => !c) : undefined}
+            onClick={hasVisibleSteps ? () => setCollapsed((c) => !c) : undefined}
           >
-            {allDone && (
+            {hasVisibleSteps && (
               <svg
                 width="20"
                 height="20"
@@ -986,15 +986,13 @@ function ThinkingStepsDisplay({ steps, header }: { steps: ThinkingStepDisplay[];
               </svg>
             )}
             <span
-              className={!allDone ? 'thinking-shimmer-text' : undefined}
               style={{
                 fontFamily: 'var(--font-primary)',
                 fontSize: 'var(--body-3-size)',
                 lineHeight: 'var(--body-3-line)',
                 color: 'var(--alpha-light-600)',
-                WebkitTextFillColor: !allDone ? 'transparent' : undefined,
                 fontWeight: 500,
-                transition: 'color 500ms ease, -webkit-text-fill-color 500ms ease',
+                transition: 'color 500ms ease',
               }}
             >
               {header}
@@ -1030,11 +1028,6 @@ function ThinkingStepsDisplay({ steps, header }: { steps: ThinkingStepDisplay[];
                     >
                       {step.label}
                     </span>
-                    {step.status === 'done' && (
-                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0 }}>
-                        <path d="M2.5 6L4.75 8.25L9.5 3.5" stroke="var(--alpha-light-400)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    )}
                   </div>
                 </div>
 
@@ -1186,27 +1179,30 @@ function AssistantMessage({
           />
         </div>
         <span
-          className="font-medium"
+          className={`font-medium${isStreaming ? ' thinking-shimmer-text' : ''}`}
           style={{
             fontFamily: 'var(--font-primary)',
             fontSize: 'var(--body-3-size)',
             lineHeight: 'var(--body-3-line)',
             letterSpacing: 'var(--body-3-spacing)',
-            color: 'var(--alpha-light-900)',
+            color: isStreaming ? undefined : 'var(--alpha-light-900)',
+            WebkitTextFillColor: isStreaming ? 'transparent' : undefined,
           }}
         >
-          Leanne
+          {isStreaming ? 'Leanne is thinking' : 'Leanne'}
         </span>
-        <span
-          style={{
-            fontFamily: 'var(--font-primary)',
-            fontSize: 'var(--body-4-size)',
-            lineHeight: 'var(--body-4-line)',
-            color: 'var(--alpha-light-400)',
-          }}
-        >
-          · {formatTime(timestamp)}
-        </span>
+        {!isStreaming && (
+          <span
+            style={{
+              fontFamily: 'var(--font-primary)',
+              fontSize: 'var(--body-4-size)',
+              lineHeight: 'var(--body-4-line)',
+              color: 'var(--alpha-light-400)',
+            }}
+          >
+            · {formatTime(timestamp)}
+          </span>
+        )}
       </div>
 
       {/* Body text */}
@@ -1219,7 +1215,7 @@ function AssistantMessage({
         )}
         {content ? (
           <RichContent content={content} isStreaming={isStreaming} totalTableRows={totalTableRows} totalRoadmapStages={totalRoadmapStages} />
-        ) : isStreaming && !(thinkingSteps && thinkingSteps.length > 0 && !thinkingSteps.every((s) => s.status === 'done')) ? (
+        ) : isStreaming && !(thinkingSteps && thinkingSteps.length > 0) ? (
           <div className="typing-indicator">
             <span />
             <span />
