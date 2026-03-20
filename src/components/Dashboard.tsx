@@ -1,11 +1,13 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import Sidebar, { type SidebarPage } from './Sidebar';
 import ChatInput from './ChatInput';
+import ConnectorsBar from './ConnectorsBar';
 import SuggestionCards, { simulatedResponses, simulatedThinkingSteps, simulatedImages } from './SuggestionCards';
 import type { ThinkingStepsConfig } from './SuggestionCards';
 import MyChatsPage from './MyChatsPage';
 import ChatPage from './ChatPage';
 import ConnectorsPage from './ConnectorsPage';
+import { ConnectorsModal } from './SettingsModal';
 import SettingsModal from './SettingsModal';
 import { PenSparkleIcon, AppleIcon } from './Icons';
 import glowSvg from '../assets/ellipse-glow.svg';
@@ -21,6 +23,18 @@ export default function Dashboard() {
   const [chatKey, setChatKey] = useState(0);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showConnectorsBar, setShowConnectorsBar] = useState(true);
+  const [connectorsBarExpanded, setConnectorsBarExpanded] = useState(false);
+  const [showConnectorsModal, setShowConnectorsModal] = useState(false);
+  const prevPageRef = useRef<SidebarPage | undefined>(undefined);
+
+  /* Show connectors bar on refresh (initial mount) and whenever user returns to New task from another page */
+  useEffect(() => {
+    if (currentPage === 'home' && prevPageRef.current !== undefined && prevPageRef.current !== 'home') {
+      setShowConnectorsBar(true);
+    }
+    prevPageRef.current = currentPage;
+  }, [currentPage]);
 
   const startChat = useCallback((message: string) => {
     setChatInitialMessage(message);
@@ -239,9 +253,27 @@ export default function Dashboard() {
                 </h1>
               </div>
 
-              {/* Chat input */}
-              <div className="chat-card-enter w-full" style={{ animationDelay: '80ms' }}>
-                <ChatInput onSubmit={startChat} />
+              {/* Chat input + connectors bar (first load only) */}
+              <div
+                className="chat-card-enter w-full"
+                style={{
+                  animationDelay: '80ms',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  background: showConnectorsBar && connectorsBarExpanded ? 'var(--alpha-light-50)' : 'transparent',
+                  borderRadius: '24px',
+                  paddingBottom: showConnectorsBar && connectorsBarExpanded ? '12px' : '0px',
+                  transition: 'background 400ms ease, padding-bottom 400ms cubic-bezier(0.4, 0, 0.2, 1)',
+                }}
+              >
+                <ChatInput onSubmit={startChat} onConnectorsClick={() => setShowConnectorsModal(true)} />
+                {showConnectorsBar && (
+                  <ConnectorsBar
+                    onConnectClick={() => setShowConnectorsModal(true)}
+                    onClose={() => { setShowConnectorsBar(false); setConnectorsBarExpanded(false); }}
+                    onExpandedChange={setConnectorsBarExpanded}
+                  />
+                )}
               </div>
 
               {/* Suggestion cards */}
@@ -257,6 +289,10 @@ export default function Dashboard() {
 
       {showSettings && (
         <SettingsModal onClose={() => setShowSettings(false)} />
+      )}
+
+      {showConnectorsModal && (
+        <ConnectorsModal onClose={() => setShowConnectorsModal(false)} />
       )}
     </div>
   );

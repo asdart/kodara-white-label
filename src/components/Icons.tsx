@@ -1,6 +1,8 @@
 /* Icon colors default to Figma token: alpha/light/600 = rgba(26,26,26,0.6)
    Pass color="var(--alpha-light-900)" etc. to override with other tokens */
 
+import type { CSSProperties } from 'react';
+
 const LIGHT_600 = 'rgba(26,26,26,0.6)'; // --alpha-light-600
 
 export function PenSparkleIcon({ className = "w-5 h-5", color = LIGHT_600 }: { className?: string; color?: string }) {
@@ -46,9 +48,9 @@ export function SettingsIcon({ className = "w-5 h-5", color = LIGHT_600 }: { cla
   );
 }
 
-export function PlusIcon({ className = "w-5 h-5", color = LIGHT_600 }: { className?: string; color?: string }) {
+export function PlusIcon({ className = "w-5 h-5", style, color = LIGHT_600 }: { className?: string; style?: CSSProperties; color?: string }) {
   return (
-    <svg className={className} viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg className={className} style={style} viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M10 3.5v13M3.5 10h13" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
@@ -304,11 +306,43 @@ export function SparkleNavIcon({ className = "w-5 h-5", color = LIGHT_600 }: { c
   );
 }
 
-export function SparkleSmallIcon({ className = "w-3 h-3" }: { className?: string }) {
+export function SparkleSmallIcon({ className = "w-3 h-3", color = "#008ba7" }: { className?: string; color?: string }) {
   return (
     <svg className={className} viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M6 1l1.146 2.854L10 5l-2.854 1.146L6 9 4.854 6.146 2 5l2.854-1.146L6 1z" fill="#008ba7" />
-      <path d="M9.5 7l.573 1.427L11.5 9l-1.427.573L9.5 11l-.573-1.427L7.5 9l1.427-.573L9.5 7z" fill="#008ba7" />
+      <path d="M6 1l1.146 2.854L10 5l-2.854 1.146L6 9 4.854 6.146 2 5l2.854-1.146L6 1z" fill={color} />
+      <path d="M9.5 7l.573 1.427L11.5 9l-1.427.573L9.5 11l-.573-1.427L7.5 9l1.427-.573L9.5 7z" fill={color} />
+    </svg>
+  );
+}
+
+/** Icon/Large/Plug — matches Figma Whitelabel-App (node 2184:9955) */
+export function PlugIcon({ className, style, color = LIGHT_600 }: { className?: string; style?: CSSProperties; color?: string }) {
+  return (
+    <svg className={className} style={style} viewBox="0 0 14.25 14.25" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M9.07999 0.219605C9.37284 -0.0732449 9.84764 -0.0731586 10.1405 0.219605C10.4334 0.512498 10.4334 0.987259 10.1405 1.28015L8.54972 2.87L11.3778 5.6991L12.9696 4.10828C13.2625 3.81571 13.7374 3.81558 14.0302 4.10828C14.3229 4.40108 14.3228 4.87593 14.0302 5.16882L12.4384 6.75964L13.6767 7.99695C14.3598 8.68009 14.3597 9.78934 13.6767 10.4725L12.4394 11.7098C9.88672 14.2624 5.84628 14.4288 3.09855 12.2108L1.28019 14.0302C0.987343 14.3229 0.512529 14.3229 0.219642 14.0302C-0.0732327 13.7373 -0.0731952 13.2625 0.219642 12.9696L2.038 11.1503C-0.179286 8.40257 -0.0123637 4.36282 2.53995 1.81043L3.77726 0.573121C4.46047 -0.109891 5.56874 -0.110012 6.25187 0.573121L7.48917 1.80945L9.07999 0.219605ZM5.19132 1.63367C5.09398 1.53632 4.93523 1.53644 4.83781 1.63367L3.6005 2.87097C1.45467 5.01689 1.45462 8.50341 3.6005 10.6493C5.7464 12.795 9.23296 12.7951 11.3788 10.6493L12.6161 9.41199C12.7133 9.31465 12.7132 9.15584 12.6161 9.05847L5.19132 1.63367Z"
+        fill={color}
+      />
+    </svg>
+  );
+}
+
+export function DotsVerticalIcon({ className = "w-5 h-5", color = LIGHT_600 }: { className?: string; color?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="10" cy="5" r="1.25" fill={color} />
+      <circle cx="10" cy="10" r="1.25" fill={color} />
+      <circle cx="10" cy="15" r="1.25" fill={color} />
+    </svg>
+  );
+}
+
+export function XMarkIcon({ className = "w-5 h-5", color = LIGHT_600 }: { className?: string; color?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M4 4l12 12M16 4L4 16" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }

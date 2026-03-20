@@ -38,6 +38,10 @@
   /* Skill green */
   --color-skill-green: #2E8B57;
 
+  /* Alpha / Brand (base #106840) */
+  --alpha-brand-50: rgba(16, 104, 68, 0.06);
+  --alpha-brand-950: rgba(16, 104, 68, 0.92);
+
   /* ── Figma Typography Tokens ── */
   --font-primary: 'Instrument Sans', sans-serif;
   --weight-regular: 400;
@@ -236,6 +240,7 @@ input, button, select, textarea, [contenteditable] {
 .plus-dropdown.closing {
   animation: dropdown-fade-slide-out 150ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
 
 .plus-dropdown-item {
   background: none;
@@ -528,6 +533,14 @@ input, button, select, textarea, [contenteditable] {
 }
 
 .settings-modal *::-webkit-scrollbar {
+  display: none;
+}
+
+.connectors-modal-hide-scrollbar {
+  scrollbar-width: none;
+}
+
+.connectors-modal-hide-scrollbar *::-webkit-scrollbar {
   display: none;
 }
 

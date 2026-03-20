@@ -1260,3 +1260,84 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
     </div>
   );
 }
+
+export function ConnectorsModal({ onClose }: { onClose: () => void }) {
+  const [closing, setClosing] = useState(false);
+  const [connectorStates, setConnectorStates] = useState<Record<string, boolean>>({});
+  const [showFacebookModal, setShowFacebookModal] = useState(false);
+  const [managingConnector, setManagingConnector] = useState<SettingsConnector | null>(null);
+  const [currentView, setCurrentView] = useState<'list' | 'manage-tools'>('list');
+
+  const handleClose = () => setClosing(true);
+
+  const handleToggleConnector = (id: string, v: boolean) => {
+    if (id === 'facebook' && v) {
+      setShowFacebookModal(true);
+      return;
+    }
+    setConnectorStates((prev) => ({ ...prev, [id]: v }));
+  };
+
+  const handleCardClick = (connector: SettingsConnector) => {
+    if (connectorStates[connector.id] && connector.tools) {
+      setManagingConnector(connector);
+      setCurrentView('manage-tools');
+    }
+  };
+
+  return (
+    <div
+      className={`connector-modal-overlay ${closing ? 'closing' : ''}`}
+      onClick={handleClose}
+      onAnimationEnd={() => { if (closing) onClose(); }}
+    >
+      <div
+        className={`connector-modal connectors-modal-hide-scrollbar ${closing ? 'closing' : ''}`}
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: '100%',
+          maxWidth: '480px',
+          maxHeight: '600px',
+          borderRadius: '16px',
+          border: '1px solid rgba(26,26,26,0.09)',
+          background: 'rgba(255, 255, 255, 0.6)',
+          backdropFilter: 'blur(10px)',
+          boxShadow:
+            '0px 3px 6px 0px rgba(0,0,0,0.04), 0px 11px 11px 0px rgba(0,0,0,0.03), 0px 24px 15px 0px rgba(0,0,0,0.02), 0px 43px 17px 0px rgba(0,0,0,0.01), 0px 67px 19px 0px rgba(0,0,0,0)',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        <div key={currentView + (managingConnector?.id || '')} className="settings-view-enter" style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+          {currentView === 'manage-tools' && managingConnector ? (
+            <ManageToolsView
+              connector={managingConnector}
+              onClose={handleClose}
+              onBack={() => { setCurrentView('list'); setManagingConnector(null); }}
+              onDisconnect={() => {
+                setConnectorStates((prev) => ({ ...prev, [managingConnector.id]: false }));
+                setCurrentView('list');
+                setManagingConnector(null);
+              }}
+            />
+          ) : (
+            <ConnectorsView
+              onClose={handleClose}
+              connectorStates={connectorStates}
+              onToggleConnector={handleToggleConnector}
+              onCardClick={handleCardClick}
+            />
+          )}
+        </div>
+      </div>
+
+      {showFacebookModal && (
+        <FacebookConnectModal
+          onClose={() => setShowFacebookModal(false)}
+          onConnect={() => setConnectorStates((prev) => ({ ...prev, facebook: true }))}
+        />
+      )}
+    </div>
+  );
+}
