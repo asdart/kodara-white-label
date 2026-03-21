@@ -6,7 +6,7 @@ import SuggestionCards, { simulatedResponses, simulatedThinkingSteps, simulatedI
 import type { ThinkingStepsConfig } from './SuggestionCards';
 import MyChatsPage from './MyChatsPage';
 import ChatPage from './ChatPage';
-import ConnectorsPage from './ConnectorsPage';
+import ConnectorsPage, { FacebookConnectModal } from './ConnectorsPage';
 import { ConnectorsModal } from './SettingsModal';
 import SettingsModal from './SettingsModal';
 import { PenSparkleIcon, AppleIcon } from './Icons';
@@ -26,7 +26,26 @@ export default function Dashboard() {
   const [showConnectorsBar, setShowConnectorsBar] = useState(true);
   const [connectorsBarExpanded, setConnectorsBarExpanded] = useState(false);
   const [showConnectorsModal, setShowConnectorsModal] = useState(false);
+  const [showFacebookModal, setShowFacebookModal] = useState(false);
+  const [prefillText, setPrefillText] = useState<string | undefined>();
+  const [prefillConnector, setPrefillConnector] = useState<string | undefined>();
   const prevPageRef = useRef<SidebarPage | undefined>(undefined);
+
+  const handleConnectorConnect = useCallback((id: string) => {
+    if (id === 'facebook') {
+      setShowFacebookModal(true);
+    } else {
+      setShowConnectorsModal(true);
+    }
+  }, []);
+
+  const handleTryItOut = useCallback((connectorId: string) => {
+    const prompts: Record<string, string> = {
+      facebook: 'Analyze my Facebook Ads performance for the last 30 days and suggest optimizations to reduce cost per acquisition',
+    };
+    setPrefillConnector(connectorId);
+    setPrefillText(prompts[connectorId] ?? '');
+  }, []);
 
   /* Show connectors bar on refresh (initial mount) and whenever user returns to New task from another page */
   useEffect(() => {
@@ -266,7 +285,13 @@ export default function Dashboard() {
                   transition: 'background 400ms ease, padding-bottom 400ms cubic-bezier(0.4, 0, 0.2, 1)',
                 }}
               >
-                <ChatInput onSubmit={startChat} onConnectorsClick={() => setShowConnectorsModal(true)} />
+                <ChatInput
+                  onSubmit={(text) => { setPrefillText(undefined); setPrefillConnector(undefined); startChat(text); }}
+                  onConnectorsClick={() => setShowConnectorsModal(true)}
+                  onConnectorConnect={handleConnectorConnect}
+                  prefillText={prefillText}
+                  prefillConnector={prefillConnector}
+                />
                 {showConnectorsBar && (
                   <ConnectorsBar
                     onConnectClick={() => setShowConnectorsModal(true)}
@@ -293,6 +318,14 @@ export default function Dashboard() {
 
       {showConnectorsModal && (
         <ConnectorsModal onClose={() => setShowConnectorsModal(false)} />
+      )}
+
+      {showFacebookModal && (
+        <FacebookConnectModal
+          onClose={() => setShowFacebookModal(false)}
+          onManageConnectors={() => { setShowFacebookModal(false); setShowConnectorsModal(true); }}
+          onTryItOut={() => handleTryItOut('facebook')}
+        />
       )}
     </div>
   );

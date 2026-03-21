@@ -140,8 +140,9 @@ function ConnectorCard({ connector, onClick }: { connector: Connector; onClick?:
   );
 }
 
-function FacebookConnectModal({ onClose }: { onClose: () => void }) {
+export function FacebookConnectModal({ onClose, onManageConnectors, onTryItOut }: { onClose: () => void; onManageConnectors?: () => void; onTryItOut?: () => void }) {
   const [closing, setClosing] = useState(false);
+  const [connected, setConnected] = useState(false);
 
   const handleClose = () => {
     setClosing(true);
@@ -347,80 +348,178 @@ function FacebookConnectModal({ onClose }: { onClose: () => void }) {
               </p>
             </div>
 
-            <div style={{ width: '100%', height: '1px', background: 'rgba(26,26,26,0.06)' }} />
+            {!connected && (
+              <div style={{ width: '100%', height: '1px', background: 'rgba(26,26,26,0.06)' }} />
+            )}
 
-            {/* Tools list */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <p
-                style={{
-                  fontFamily: 'var(--font-primary)',
-                  fontWeight: 600,
-                  fontSize: '14px',
-                  lineHeight: '20px',
-                  color: 'var(--alpha-light-900, rgba(26,26,26,0.8))',
-                }}
-              >
-                Tools:
-              </p>
-              {[
-                'Analyze ad accounts',
-                'Create & launch new ads',
-                'View campaign performance',
-                'Spy on competitor ads',
-                'Create detailed reports',
-                'Automate rules',
-              ].map((tool) => (
-                <div key={tool} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <svg width="14" height="10" viewBox="0 0 14 10" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
-                    <path d="M1 5L5 9L13 1" stroke="rgba(26,26,26,0.6)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                  <span
-                    style={{
-                      fontFamily: 'var(--font-primary)',
-                      fontWeight: 400,
-                      fontSize: '14px',
-                      lineHeight: '20px',
-                      color: 'var(--alpha-light-600, rgba(26,26,26,0.6))',
-                    }}
-                  >
-                    {tool}
-                  </span>
-                </div>
-              ))}
-            </div>
+            {!connected && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <p
+                  style={{
+                    fontFamily: 'var(--font-primary)',
+                    fontWeight: 600,
+                    fontSize: '14px',
+                    lineHeight: '20px',
+                    color: 'var(--alpha-light-900, rgba(26,26,26,0.8))',
+                  }}
+                >
+                  Tools:
+                </p>
+                {[
+                  'Analyze ad accounts',
+                  'Create & launch new ads',
+                  'View campaign performance',
+                  'Spy on competitor ads',
+                  'Create detailed reports',
+                  'Automate rules',
+                ].map((tool) => (
+                  <div key={tool} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <svg width="14" height="10" viewBox="0 0 14 10" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
+                      <path d="M1 5L5 9L13 1" stroke="rgba(26,26,26,0.6)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    <span
+                      style={{
+                        fontFamily: 'var(--font-primary)',
+                        fontWeight: 400,
+                        fontSize: '14px',
+                        lineHeight: '20px',
+                        color: 'var(--alpha-light-600, rgba(26,26,26,0.6))',
+                      }}
+                    >
+                      {tool}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* Connect button */}
-          <button
-            className="connector-modal-btn"
-            onClick={handleClose}
-          >
-            <span
-              style={{
-                position: 'relative',
-                zIndex: 1,
-                fontFamily: 'var(--font-primary)',
-                fontWeight: 500,
-                fontSize: '14px',
-                lineHeight: '20px',
-                letterSpacing: '-0.15px',
-                color: 'rgba(255,255,255,0.8)',
-                textAlign: 'center',
-              }}
+          {!connected ? (
+            <button
+              className="connector-modal-btn"
+              onClick={() => setConnected(true)}
             >
-              Connect
-            </span>
-            <div
-              style={{
-                position: 'absolute',
-                inset: 0,
-                borderRadius: '8px',
-                border: '1.5px solid white',
-                filter: 'blur(0.2px)',
-                pointerEvents: 'none',
-              }}
-            />
-          </button>
+              <span
+                style={{
+                  position: 'relative',
+                  zIndex: 1,
+                  fontFamily: 'var(--font-primary)',
+                  fontWeight: 500,
+                  fontSize: '14px',
+                  lineHeight: '20px',
+                  letterSpacing: '-0.15px',
+                  color: 'rgba(255,255,255,0.8)',
+                  textAlign: 'center',
+                }}
+              >
+                Connect
+              </span>
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  borderRadius: '8px',
+                  border: '1.5px solid white',
+                  filter: 'blur(0.2px)',
+                  pointerEvents: 'none',
+                }}
+              />
+            </button>
+          ) : (
+            <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
+              <button
+                onClick={() => { handleClose(); onTryItOut?.(); }}
+                style={{
+                  flex: '1 0 0',
+                  position: 'relative',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '8px 20px',
+                  borderRadius: '8px',
+                  background: 'linear-gradient(180deg, #737373 0%, #404040 100%)',
+                  border: 'none',
+                  cursor: 'pointer',
+                  overflow: 'hidden',
+                }}
+              >
+                <span
+                  style={{
+                    position: 'relative',
+                    zIndex: 1,
+                    fontFamily: 'var(--font-primary)',
+                    fontWeight: 500,
+                    fontSize: '14px',
+                    lineHeight: '20px',
+                    letterSpacing: '-0.15px',
+                    color: 'rgba(255,255,255,0.8)',
+                    textAlign: 'center',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  Try it out
+                </span>
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    borderRadius: '8px',
+                    border: '1.5px solid white',
+                    filter: 'blur(0.2px)',
+                    pointerEvents: 'none',
+                  }}
+                />
+              </button>
+              <button
+                onClick={() => {
+                  handleClose();
+                  onManageConnectors?.();
+                }}
+                style={{
+                  flex: '1 0 0',
+                  position: 'relative',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '8px 20px',
+                  borderRadius: '8px',
+                  background: 'rgba(255,255,255,0.06)',
+                  border: '1px solid rgba(26,26,26,0.2)',
+                  cursor: 'pointer',
+                  overflow: 'hidden',
+                }}
+              >
+                <span
+                  style={{
+                    position: 'relative',
+                    zIndex: 1,
+                    fontFamily: 'var(--font-primary)',
+                    fontWeight: 500,
+                    fontSize: '14px',
+                    lineHeight: '20px',
+                    letterSpacing: '-0.15px',
+                    color: 'rgba(26,26,26,0.8)',
+                    textAlign: 'center',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  Manage connectors
+                </span>
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: '-1px',
+                    borderRadius: '8px',
+                    border: '1.5px solid white',
+                    filter: 'blur(0.2px)',
+                    pointerEvents: 'none',
+                  }}
+                />
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

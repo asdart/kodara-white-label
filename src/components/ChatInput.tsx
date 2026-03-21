@@ -11,6 +11,9 @@ interface ChatInputProps {
   onSubmit?: (text: string) => void;
   onStop?: () => void;
   onConnectorsClick?: () => void;
+  onConnectorConnect?: (id: string) => void;
+  prefillText?: string;
+  prefillConnector?: string;
   placeholder?: string;
 }
 
@@ -25,7 +28,7 @@ const MAX_LINES = 4;
 const LINE_HEIGHT = 20;
 const MAX_TEXTAREA_HEIGHT = MAX_LINES * LINE_HEIGHT;
 
-export default function ChatInput({ disabled = false, onTextChange, onSubmit, onStop, onConnectorsClick, placeholder = "How can I help you today?" }: ChatInputProps) {
+export default function ChatInput({ disabled = false, onTextChange, onSubmit, onStop, onConnectorsClick, onConnectorConnect, prefillText, prefillConnector, placeholder = "How can I help you today?" }: ChatInputProps) {
   const isStopMode = disabled && !!onStop;
   const [hasText, setHasText] = useState(false);
 
@@ -40,7 +43,8 @@ export default function ChatInput({ disabled = false, onTextChange, onSubmit, on
   const [connectorsOpen, setConnectorsOpen] = useState(false);
   const [connectorsClosing, setConnectorsClosing] = useState(false);
   const [connectorsPosition, setConnectorsPosition] = useState({ top: 0, left: 0 });
-  const [connectorToggles, setConnectorToggles] = useState<Record<string, boolean>>({ facebook: false, 'google-workspace': false, 'google-ads': false });
+  const [connectorToggles, setConnectorToggles] = useState<Record<string, boolean>>({ facebook: false, 'google-workspace': true, 'google-ads': true });
+  const [everConnected, setEverConnected] = useState<Set<string>>(new Set(['google-workspace', 'google-ads']));
   const connectorsDropdownRef = useRef<HTMLDivElement>(null);
   const connectorsBtnRef = useRef<HTMLButtonElement>(null);
 
@@ -151,6 +155,25 @@ export default function ChatInput({ disabled = false, onTextChange, onSubmit, on
     },
     [handleSubmit],
   );
+
+  // ── Prefill from "Try it out" ────────────────────────────────────────────
+  useEffect(() => {
+    if (!prefillText) return;
+    const el = textareaRef.current;
+    if (!el) return;
+    el.value = prefillText;
+    setHasText(true);
+    onTextChange?.(prefillText);
+    autoResize();
+    el.focus();
+    el.setSelectionRange(el.value.length, el.value.length);
+  }, [prefillText]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!prefillConnector) return;
+    setConnectorToggles((prev) => ({ ...prev, [prefillConnector]: true }));
+    setEverConnected((prev) => new Set([...prev, prefillConnector]));
+  }, [prefillConnector]);
 
   // ── Click-outside / Escape for plus dropdown ──────────────────────────────
 
@@ -415,12 +438,16 @@ export default function ChatInput({ disabled = false, onTextChange, onSubmit, on
                       <div
                         style={{
                           display: 'flex', alignItems: 'center', gap: '6px',
-                          height: '32px', padding: '6px',
+                          height: 'fit-content', padding: '8px',
                           borderRadius: '8px', position: 'relative',
                           background: isOn ? 'var(--alpha-light-50)' : 'transparent',
                           cursor: 'pointer',
                         }}
-                        onClick={() => setConnectorToggles((prev) => ({ ...prev, [connector.id]: !prev[connector.id] }))}
+                        onClick={() => {
+                          const next = !connectorToggles[connector.id];
+                          setConnectorToggles((prev) => ({ ...prev, [connector.id]: next }));
+                          if (next) setEverConnected((prev) => new Set([...prev, connector.id]));
+                        }}
                       >
                         <img
                           src={connector.logo}
@@ -441,26 +468,46 @@ export default function ChatInput({ disabled = false, onTextChange, onSubmit, on
                         >
                           {connector.name}
                         </span>
-                        {/* Toggle switch */}
-                        <div
-                          style={{
-                            width: '30px', height: '16px', borderRadius: '1000px',
-                            background: isOn ? '#0d6fff' : 'var(--alpha-light-100)',
-                            padding: '2px', flexShrink: 0, position: 'relative',
-                            transition: 'background 200ms ease',
-                            display: 'flex', alignItems: 'center',
-                          }}
-                        >
+                        {/* Toggle or Connect link */}
+                        {(isOn || everConnected.has(connector.id)) ? (
                           <div
                             style={{
-                              width: '12px', height: '12px',
-                              borderRadius: '100px', background: 'white',
-                              boxShadow: '0px 0px 1px 0px rgba(0,0,0,0.05), 0px 0px 4px 0px rgba(0,0,0,0.05), 0px 0px 44px 0px rgba(0,0,0,0.1)',
-                              transform: isOn ? 'translateX(14px)' : 'translateX(0)',
-                              transition: 'transform 200ms ease',
+                              width: '30px', height: '16px', borderRadius: '1000px',
+                              background: isOn ? '#0d6fff' : 'var(--alpha-light-100)',
+                              padding: '2px', flexShrink: 0,
+                              display: 'flex', alignItems: 'center',
+                              transition: 'background 200ms ease',
                             }}
-                          />
-                        </div>
+                          >
+                            <div
+                              style={{
+                                width: '12px', height: '12px',
+                                borderRadius: '100px', background: 'white',
+                                boxShadow: '0px 0px 1px 0px rgba(0,0,0,0.05), 0px 0px 4px 0px rgba(0,0,0,0.05), 0px 0px 44px 0px rgba(0,0,0,0.1)',
+                                transform: isOn ? 'translateX(14px)' : 'translateX(0)',
+                                transition: 'transform 200ms ease',
+                              }}
+                            />
+                          </div>
+                        ) : (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              closeConnectorsDropdown();
+                              onConnectorConnect?.(connector.id);
+                            }}
+                            style={{
+                              background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                              fontFamily: 'var(--font-primary)', fontWeight: 500,
+                              fontSize: '12px', lineHeight: '16px',
+                              color: 'var(--alpha-light-600)',
+                              letterSpacing: 'var(--body-3-spacing)',
+                              flexShrink: 0,
+                            }}
+                          >
+                            Connect
+                          </button>
+                        )}
                       </div>
                     </div>
                   );
@@ -472,7 +519,7 @@ export default function ChatInput({ disabled = false, onTextChange, onSubmit, on
                 <div
                   style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
-                    height: '32px', padding: '8px 6px',
+                    height: 'fit-content', padding: '8px 6px',
                     borderTop: '1px solid var(--alpha-light-50)',
                     cursor: 'pointer',
                   }}
