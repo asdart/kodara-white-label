@@ -499,7 +499,7 @@ export default function ChatInput({ disabled = false, onTextChange, onSubmit, on
                             style={{
                               background: 'none', border: 'none', cursor: 'pointer', padding: 0,
                               fontFamily: 'var(--font-primary)', fontWeight: 500,
-                              fontSize: '12px', lineHeight: '16px',
+                              fontSize: '14px', lineHeight: '16px',
                               color: 'var(--alpha-light-600)',
                               letterSpacing: 'var(--body-3-spacing)',
                               flexShrink: 0,
