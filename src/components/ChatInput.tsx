@@ -310,12 +310,12 @@ export default function ChatInput({ disabled = false, onTextChange, onSubmit, on
             style={{
               padding: '2px',
               borderRadius: '6px',
-              background: disabled ? 'var(--color-neutral-50)' : 'var(--color-white)',
+              background: disabled ? 'var(--surface-secondary)' : 'var(--surface-primary)',
               cursor: disabled ? 'not-allowed' : 'pointer',
               border: 'none',
             }}
           >
-            <PlusIcon className="w-5 h-5" color={disabled ? 'var(--alpha-light-200)' : undefined} />
+            <PlusIcon className="w-5 h-5" color={disabled ? 'var(--alpha-light-200)' : 'var(--alpha-light-600)'} />
           </button>
 
           {/* Plus dropdown */}
@@ -328,7 +328,7 @@ export default function ChatInput({ disabled = false, onTextChange, onSubmit, on
                 width: '144px',
                 paddingTop: '4px', paddingBottom: '4px',
                 borderRadius: '12px',
-                background: 'rgba(255,255,255,0.6)',
+                background: 'var(--surface-elevated)',
                 backdropFilter: 'blur(4px)',
                 border: '1px solid var(--alpha-light-100)',
                 boxShadow: '0px 67px 19px 0px rgba(0,0,0,0), 0px 43px 17px 0px rgba(0,0,0,0.01), 0px 24px 15px 0px rgba(0,0,0,0.02), 0px 11px 11px 0px rgba(0,0,0,0.03), 0px 3px 6px 0px rgba(0,0,0,0.04)',
@@ -423,7 +423,7 @@ export default function ChatInput({ disabled = false, onTextChange, onSubmit, on
                 width: '240px',
                 paddingTop: '4px', paddingBottom: '4px',
                 borderRadius: '12px',
-                background: 'rgba(255,255,255,0.6)',
+                background: 'var(--surface-elevated)',
                 backdropFilter: 'blur(4px)',
                 border: '1px solid var(--alpha-light-100)',
                 boxShadow: '0px 67px 19px 0px rgba(0,0,0,0), 0px 43px 17px 0px rgba(0,0,0,0.01), 0px 24px 15px 0px rgba(0,0,0,0.02), 0px 11px 11px 0px rgba(0,0,0,0.03), 0px 3px 6px 0px rgba(0,0,0,0.04)',
@@ -564,7 +564,7 @@ export default function ChatInput({ disabled = false, onTextChange, onSubmit, on
           <div
             className="flex items-center overflow-hidden rounded-full"
             style={{
-              background: micOpen ? '#f5f5f5' : 'var(--color-neutral-50)',
+              background: micOpen ? 'var(--surface-inset)' : 'var(--surface-secondary)',
               transition: 'background 150ms ease',
             }}
           >
@@ -591,7 +591,7 @@ export default function ChatInput({ disabled = false, onTextChange, onSubmit, on
                   width: '200px',
                   paddingTop: '4px', paddingBottom: '4px',
                   borderRadius: '12px',
-                  background: 'rgba(255,255,255,0.6)',
+                  background: 'var(--surface-elevated)',
                   backdropFilter: 'blur(4px)',
                   border: '1px solid var(--alpha-light-100)',
                   boxShadow: '0px 67px 19px 0px rgba(0,0,0,0), 0px 43px 17px 0px rgba(0,0,0,0.01), 0px 24px 15px 0px rgba(0,0,0,0.02), 0px 11px 11px 0px rgba(0,0,0,0.03), 0px 3px 6px 0px rgba(0,0,0,0.04)',
@@ -651,7 +651,7 @@ export default function ChatInput({ disabled = false, onTextChange, onSubmit, on
               disabled={disabled}
               style={{
                 width: '36px', height: '36px', padding: '8px',
-                background: 'var(--color-white)', border: '1px solid var(--alpha-light-100)',
+                background: 'var(--surface-primary)', border: '1px solid var(--alpha-light-100)',
                 borderRadius: 'var(--radius-full)', cursor: disabled ? 'not-allowed' : 'pointer',
                 boxShadow: '0px 22px 6px 0px rgba(0,0,0,0), 0px 14px 6px 0px rgba(0,0,0,0), 0px 8px 5px 0px rgba(0,0,0,0.01), 0px 4px 4px 0px rgba(0,0,0,0.02), 0px 1px 2px 0px rgba(0,0,0,0.02)',
               }}

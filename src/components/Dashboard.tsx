@@ -83,7 +83,7 @@ export default function Dashboard() {
   return (
     <div
       className="flex items-start w-full h-full rounded-3xl overflow-hidden relative"
-      style={{ background: 'var(--color-white)' }}
+      style={{ background: 'var(--surface-primary)', transition: 'background 300ms ease' }}
     >
       {/* Background gradient behind main content */}
       <div
@@ -260,12 +260,13 @@ export default function Dashboard() {
 
                 {/* Greeting */}
                 <h1
-                  className="font-normal text-black text-center"
+                  className="font-normal text-center"
                   style={{
                     fontFamily: 'var(--font-primary)',
                     fontSize: 'var(--heading-h4-size)',
                     lineHeight: 'var(--heading-h4-line)',
                     letterSpacing: 'var(--heading-h1-spacing)',
+                    color: 'var(--text-primary)',
                   }}
                 >
                   Hey Marcos, what&rsquo;s up?

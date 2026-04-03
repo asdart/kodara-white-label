@@ -68,10 +68,29 @@ interface RoadmapStage {
   milestone: string;
 }
 
+interface ScorecardCategory {
+  name: string;
+  grade: string;
+  score: number;
+  color: string;
+}
+
+interface ScorecardData {
+  score: number;
+  grade: string;
+  callType: string;
+  date: string;
+  duration: string;
+  summary: string;
+  categories: ScorecardCategory[];
+  closed: boolean;
+}
+
 type ContentBlock =
   | { type: 'text'; value: string }
   | { type: 'table'; headers: string[]; rows: string[][] }
-  | { type: 'roadmap'; stages: RoadmapStage[]; closed: boolean };
+  | { type: 'roadmap'; stages: RoadmapStage[]; closed: boolean }
+  | { type: 'scorecard'; data: ScorecardData };
 
 function parseContentBlocks(text: string): ContentBlock[] {
   const lines = text.split('\n');
@@ -95,7 +114,41 @@ function parseContentBlocks(text: string): ContentBlock[] {
   while (i < lines.length) {
     const line = lines[i];
 
-    if (line.trim() === '[ROADMAP]') {
+    if (line.trim() === '[SCORECARD]') {
+      flushText();
+      i++;
+      const categories: ScorecardCategory[] = [];
+      let headerParts: string[] = [];
+      let firstLine = true;
+      while (i < lines.length && lines[i].trim() !== '[/SCORECARD]') {
+        const parts = lines[i].split('|').map((s) => s.trim());
+        if (firstLine && parts.length >= 6) {
+          headerParts = parts;
+          firstLine = false;
+        } else if (!firstLine && parts.length >= 4) {
+          categories.push({
+            name: parts[0],
+            grade: parts[1],
+            score: parseInt(parts[2], 10) || 0,
+            color: parts[3],
+          });
+        }
+        i++;
+      }
+      const closed = i < lines.length && lines[i].trim() === '[/SCORECARD]';
+      if (closed) i++;
+      const data: ScorecardData = {
+        score: parseInt(headerParts[0], 10) || 0,
+        grade: headerParts[1] || '',
+        callType: headerParts[2] || '',
+        date: headerParts[3] || '',
+        duration: headerParts[4] || '',
+        summary: headerParts[5] || '',
+        categories,
+        closed,
+      };
+      blocks.push({ type: 'scorecard', data });
+    } else if (line.trim() === '[ROADMAP]') {
       flushText();
       i++;
       const stages: RoadmapStage[] = [];
@@ -335,6 +388,132 @@ function RoadmapChart({ stages, isStreaming, totalStages, closed }: { stages: Ro
   );
 }
 
+function CircleGauge({ score, size = 80 }: { score: number; size?: number }) {
+  const r = (size - 10) / 2;
+  const cx = size / 2;
+  const cy = size / 2;
+  const startAngle = 135;
+  const sweepAngle = 270;
+  const fraction = Math.min(score / 100, 1);
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+
+  const arcPath = (from: number, to: number) => {
+    const s = { x: cx + r * Math.cos(toRad(from)), y: cy + r * Math.sin(toRad(from)) };
+    const e = { x: cx + r * Math.cos(toRad(to)), y: cy + r * Math.sin(toRad(to)) };
+    const large = to - from > 180 ? 1 : 0;
+    return `M ${s.x} ${s.y} A ${r} ${r} 0 ${large} 1 ${e.x} ${e.y}`;
+  };
+
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ flexShrink: 0 }}>
+      {/* Track */}
+      <path d={arcPath(startAngle, startAngle + sweepAngle)} fill="none" stroke="var(--alpha-light-100)" strokeWidth="5.5" strokeLinecap="round" />
+      {/* Fill */}
+      {fraction > 0 && (
+        <path d={arcPath(startAngle, startAngle + sweepAngle * fraction)} fill="none" stroke="#f59e0b" strokeWidth="5.5" strokeLinecap="round" />
+      )}
+      <text x={cx} y={cy - 3} textAnchor="middle" dominantBaseline="middle"
+        style={{ fontFamily: 'var(--font-primary)', fontWeight: 700, fontSize: '18px', fill: 'var(--alpha-light-600)' }}>
+        {score}
+      </text>
+      <text x={cx} y={cy + 12} textAnchor="middle" dominantBaseline="middle"
+        style={{ fontFamily: 'var(--font-primary)', fontWeight: 500, fontSize: '9px', fill: 'var(--alpha-light-400)' }}>
+        /100
+      </text>
+    </svg>
+  );
+}
+
+function ScorecardCard({ data }: { data: ScorecardData }) {
+  const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
+
+  return (
+    <div
+      style={{
+        margin: '16px 0',
+        borderRadius: '16px',
+        border: '1px solid var(--alpha-light-100)',
+        background: 'var(--alpha-light-25)',
+        overflow: 'hidden',
+        boxShadow: 'none',
+      }}
+    >
+      {/* Header */}
+      <div style={{ padding: '20px 20px 14px', borderBottom: '1px solid var(--alpha-light-50)' }}>
+        <p style={{ fontFamily: 'var(--font-primary)', fontWeight: 600, fontSize: 'var(--body-3-size)', lineHeight: 'var(--body-3-line)', color: 'var(--alpha-light-900)', margin: 0 }}>
+          Call Scorecard
+        </p>
+        <p style={{ fontFamily: 'var(--font-primary)', fontSize: 'var(--body-4-size)', lineHeight: 'var(--body-4-line)', color: 'var(--alpha-light-600)', margin: '3px 0 0' }}>
+          {data.callType} · {data.date} · {data.duration}
+        </p>
+      </div>
+
+      {/* Score summary row */}
+      <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start', padding: '16px 20px', borderBottom: '1px solid var(--alpha-light-50)' }}>
+        <CircleGauge score={data.score} size={80} />
+        <div style={{ flex: 1, paddingTop: '2px' }}>
+          <p style={{ fontFamily: 'var(--font-primary)', fontWeight: 600, fontSize: 'var(--body-3-size)', lineHeight: 'var(--body-3-line)', color: 'var(--alpha-light-900)', margin: '0 0 6px' }}>
+            Grade: {data.grade}
+          </p>
+          <p style={{ fontFamily: 'var(--font-primary)', fontSize: 'var(--body-4-size)', lineHeight: '18px', color: 'var(--alpha-light-600)', margin: 0, letterSpacing: 'var(--body-3-spacing)' }}>
+            {data.summary}
+          </p>
+        </div>
+      </div>
+
+      {/* Category rows */}
+      <div>
+        {data.categories.map((cat, idx) => {
+          const isExpanded = expandedIdx === idx;
+          const isLast = idx === data.categories.length - 1;
+          return (
+            <div key={idx} style={{ borderBottom: isLast ? 'none' : '1px solid var(--alpha-light-50)' }}>
+              <div
+                className="scorecard-row-hover"
+                style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '11px 20px', cursor: 'pointer', transition: 'background 150ms ease' }}
+                onClick={() => setExpandedIdx(isExpanded ? null : idx)}
+              >
+                {/* Name + grade */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', width: '190px', flexShrink: 0 }}>
+                  <span style={{ fontFamily: 'var(--font-primary)', fontWeight: 600, fontSize: 'var(--body-3-size)', lineHeight: 'var(--body-3-line)', color: 'var(--alpha-light-900)', letterSpacing: 'var(--body-3-spacing)' }}>
+                    {cat.name}
+                  </span>
+                  <span style={{ fontFamily: 'var(--font-primary)', fontWeight: 600, fontSize: 'var(--body-4-size)', color: cat.color, flexShrink: 0 }}>
+                    {cat.grade}
+                  </span>
+                </div>
+                {/* Progress bar */}
+                <div style={{ flex: 1, height: '4px', borderRadius: '2px', background: 'var(--alpha-light-100)' }}>
+                  <div style={{ height: '100%', borderRadius: '2px', background: cat.color, width: `${cat.score}%`, transition: 'width 700ms cubic-bezier(0.4,0,0.2,1)' }} />
+                </div>
+                {/* Score */}
+                <span style={{ fontFamily: 'var(--font-primary)', fontWeight: 600, fontSize: 'var(--body-3-size)', color: 'var(--alpha-light-900)', minWidth: '22px', textAlign: 'right', flexShrink: 0 }}>
+                  {cat.score}
+                </span>
+                {/* Chevron */}
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 200ms ease' }}>
+                  <path d="M4 6l4 4 4-4" stroke="var(--alpha-light-300)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Footer */}
+      <div style={{ padding: '12px 20px', borderTop: '1px solid var(--alpha-light-50)', display: 'flex', alignItems: 'center', gap: '7px' }}>
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}>
+          <rect x="2" y="1.5" width="10" height="11" rx="1.5" stroke="var(--alpha-light-400)" strokeWidth="1.2"/>
+          <path d="M4.5 5h5M4.5 7.5h5M4.5 10h3" stroke="var(--alpha-light-400)" strokeWidth="1.2" strokeLinecap="round"/>
+        </svg>
+        <span style={{ fontFamily: 'var(--font-primary)', fontSize: 'var(--body-4-size)', lineHeight: 'var(--body-4-line)', color: 'var(--alpha-light-400)', cursor: 'pointer', letterSpacing: 'var(--body-3-spacing)' }}>
+          View Full Transcript
+        </span>
+      </div>
+    </div>
+  );
+}
+
 function RichContent({ content, isStreaming, totalTableRows, totalRoadmapStages }: { content: string; isStreaming: boolean; totalTableRows?: number; totalRoadmapStages?: number }) {
   const blocks = parseContentBlocks(content);
   return (
@@ -371,6 +550,15 @@ function RichContent({ content, isStreaming, totalTableRows, totalRoadmapStages 
                 isStreaming={isStreaming}
                 totalStages={totalRoadmapStages ?? block.stages.length}
               />
+            </div>
+          );
+        }
+
+        if (block.type === 'scorecard') {
+          return (
+            <div key={i}>
+              {i > 0 && <div className="chat-divider" />}
+              <ScorecardCard data={block.data} />
             </div>
           );
         }
@@ -1596,13 +1784,25 @@ export default function ChatPage({ initialMessage, simulatedResponse, simulatedS
       });
     };
 
+    let inScorecard = false;
     for (let li = 0; li < lines.length && !cancelledRef.current; li++) {
       const line = lines[li];
       const trimmed = line.trim();
       const isTableLine = trimmed.startsWith('|') && trimmed.endsWith('|');
       const isTableSep = /^\|[\s-:|]+\|$/.test(trimmed);
 
-      if (trimmed === '[ROADMAP]') {
+      if (trimmed === '[SCORECARD]') {
+        inScorecard = true;
+        flush(accumulated + (li > 0 ? '\n' : '') + line);
+        await wait(100);
+      } else if (trimmed === '[/SCORECARD]') {
+        inScorecard = false;
+        flush(accumulated + '\n' + line);
+        await wait(60);
+      } else if (inScorecard) {
+        flush(accumulated + '\n' + line);
+        await wait(200 + Math.random() * 150);
+      } else if (trimmed === '[ROADMAP]') {
         inRoadmap = true;
         flush(accumulated + (li > 0 ? '\n' : '') + line);
         await wait(100);
@@ -1740,7 +1940,7 @@ export default function ChatPage({ initialMessage, simulatedResponse, simulatedS
           className="w-full pointer-events-none"
           style={{
             height: '80px',
-            background: 'linear-gradient(to bottom, transparent, white)',
+            background: 'linear-gradient(to bottom, transparent, var(--surface-primary))',
           }}
         />
         {/* ── Audio player — floats above input when voice is active ── */}
@@ -1766,7 +1966,7 @@ export default function ChatPage({ initialMessage, simulatedResponse, simulatedS
             paddingRight: '24px',
             paddingBottom: '19px',
             paddingTop: '8px',
-            background: 'white',
+            background: 'rgba(255, 255, 255, 0)',
           }}
         >
           {/* ── Scroll-to-bottom button (absolute, above input) ── */}

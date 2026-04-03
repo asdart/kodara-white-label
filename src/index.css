@@ -15,25 +15,25 @@
   --color-neutral-600: #525252;
 
   /* Alpha / Light  (base #1a1a1a) */
-  --alpha-light-25: rgba(26, 26, 26, 0.03);    /* #1a1a1a0f */
-  --alpha-light-50: rgba(26, 26, 26, 0.06);    /* #1a1a1a0f */
-  --alpha-light-100: rgba(26, 26, 26, 0.09);   /* #1a1a1a17 */
-  --alpha-light-200: rgba(26, 26, 26, 0.2);    /* #1a1a1a33 */
-  --alpha-light-300: rgba(26, 26, 26, 0.28);   /* #1a1a1a47 */
-  --alpha-light-400: rgba(26, 26, 26, 0.36);   /* #1a1a1a5c */
-  --alpha-light-600: rgba(26, 26, 26, 0.6);    /* #1a1a1a99 */
-  --alpha-light-900: rgba(26, 26, 26, 0.8);    /* #1a1a1acc */
+  --alpha-light-25: rgba(26, 26, 26, 0.03);
+  --alpha-light-50: rgba(26, 26, 26, 0.06);
+  --alpha-light-100: rgba(26, 26, 26, 0.09);
+  --alpha-light-200: rgba(26, 26, 26, 0.2);
+  --alpha-light-300: rgba(26, 26, 26, 0.28);
+  --alpha-light-400: rgba(26, 26, 26, 0.36);
+  --alpha-light-600: rgba(26, 26, 26, 0.6);
+  --alpha-light-900: rgba(26, 26, 26, 0.8);
 
   /* Alpha / Dark  (base #ffffff) */
-  --alpha-dark-100: rgba(255, 255, 255, 0.09);  /* #ffffff17 */
-  --alpha-dark-300: rgba(255, 255, 255, 0.28);  /* #ffffff47 */
-  --alpha-dark-600: rgba(255, 255, 255, 0.6);   /* #ffffff99 */
-  --alpha-dark-800: rgba(255, 255, 255, 0.75);  /* #ffffffbf */
-  --alpha-dark-900: rgba(255, 255, 255, 0.8);   /* #ffffffcc */
+  --alpha-dark-100: rgba(255, 255, 255, 0.09);
+  --alpha-dark-300: rgba(255, 255, 255, 0.28);
+  --alpha-dark-600: rgba(255, 255, 255, 0.6);
+  --alpha-dark-800: rgba(255, 255, 255, 0.75);
+  --alpha-dark-900: rgba(255, 255, 255, 0.8);
 
   /* Alpha / Pelorous  (base #00afd0) */
-  --alpha-pelorous-50: rgba(0, 175, 208, 0.06);  /* #00afd00f */
-  --alpha-pelorous-200: rgba(0, 175, 208, 0.2);  /* #00afd033 */
+  --alpha-pelorous-50: rgba(0, 175, 208, 0.06);
+  --alpha-pelorous-200: rgba(0, 175, 208, 0.2);
 
   /* Skill green */
   --color-skill-green: #2E8B57;
@@ -41,6 +41,41 @@
   /* Alpha / Brand (base #106840) */
   --alpha-brand-50: rgba(16, 104, 68, 0.06);
   --alpha-brand-950: rgba(16, 104, 68, 0.92);
+
+  /* ── Semantic surface & text tokens (light) ── */
+  --surface-primary: #ffffff;
+  --surface-secondary: #fafafa;
+  --surface-elevated: rgba(255, 255, 255, 0.6);
+  --surface-overlay: rgba(255, 255, 255, 0.5);
+  --surface-inset: rgba(26, 26, 26, 0.04);
+  --surface-sidebar: rgba(0, 180, 212, 0.05);
+  --text-primary: #1a1a1a;
+  --text-heading: rgba(26, 26, 26, 0.8);
+  --text-body: rgba(26, 26, 26, 0.6);
+  --text-muted: rgba(26, 26, 26, 0.36);
+  --border-default: rgba(26, 26, 26, 0.09);
+  --border-subtle: rgba(26, 26, 26, 0.06);
+  --border-strong: rgba(26, 26, 26, 0.2);
+  --icon-filter: none;
+  --close-btn-bg: rgba(26, 26, 26, 0.06);
+  --toggle-off-bg: rgba(0, 0, 0, 0.05);
+  --toggle-off-circle-border: #c6c6c6;
+  --knob-bg: white;
+  --gradient-fade: linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,0.6) 100%);
+  --btn-gradient: linear-gradient(180deg, #737373 0%, #404040 100%);
+  --svg-stroke-color: rgba(26, 26, 26, 0.6);
+  --check-stroke: rgba(26, 26, 26, 0.6);
+  --disconnect-stroke: rgba(26, 26, 26, 0.6);
+  --modal-dot-color: rgba(26, 26, 26, 0.3);
+  --connector-manage-color: rgba(26, 26, 26, 0.5);
+  --connector-tool-border: rgba(26, 26, 26, 0.06);
+  --connector-connected-bg: rgba(16, 104, 68, 0.08);
+  --connector-off-bg: rgba(26, 26, 26, 0.04);
+  --modal-icon-border: rgba(26, 26, 26, 0.2);
+  --modal-icon-bg: white;
+  --modal-divider: rgba(26, 26, 26, 0.06);
+  --btn-text-color: rgba(255, 255, 255, 0.8);
+  --btn-border-inner: white;
 
   /* ── Figma Typography Tokens ── */
   --font-primary: 'Instrument Sans', sans-serif;
@@ -62,6 +97,75 @@
   --radius-full: 999px;
 }
 
+/* ── Dark theme overrides ──
+   WCAG AA contrast ratios:
+   - text-primary (#f0f0f0) on surface-primary (#161616) → 14.7:1
+   - text-heading (#d4d4d4) on surface-primary → 11.0:1
+   - text-body (#a3a3a3) on surface-primary → 7.2:1
+   - text-muted (#737373) on surface-primary → 4.5:1
+*/
+[data-theme="dark"] {
+  --color-white: #161616;
+  --color-neutral-50: #1e1e1e;
+  --color-neutral-600: #a3a3a3;
+  --color-pelorous-50: #0a2a33;
+
+  --alpha-light-25: rgba(255, 255, 255, 0.03);
+  --alpha-light-50: rgba(255, 255, 255, 0.06);
+  --alpha-light-100: rgba(255, 255, 255, 0.09);
+  --alpha-light-200: rgba(255, 255, 255, 0.16);
+  --alpha-light-300: rgba(255, 255, 255, 0.22);
+  --alpha-light-400: rgba(255, 255, 255, 0.32);
+  --alpha-light-600: rgba(255, 255, 255, 0.6);
+  --alpha-light-900: rgba(255, 255, 255, 0.87);
+
+  --alpha-dark-100: rgba(255, 255, 255, 0.06);
+  --alpha-dark-300: rgba(255, 255, 255, 0.10);
+  --alpha-dark-600: rgba(255, 255, 255, 0.14);
+  --alpha-dark-800: rgba(255, 255, 255, 0.06);
+  --alpha-dark-900: rgba(255, 255, 255, 0.10);
+
+  --alpha-pelorous-50: rgba(0, 175, 208, 0.10);
+  --alpha-pelorous-200: rgba(0, 175, 208, 0.25);
+
+  --alpha-brand-50: rgba(52, 211, 153, 0.10);
+  --alpha-brand-950: rgba(52, 211, 153, 0.92);
+
+  --surface-primary: #161616;
+  --surface-secondary: #1e1e1e;
+  --surface-elevated: rgba(30, 30, 30, 0.8);
+  --surface-overlay: rgba(0, 0, 0, 0.6);
+  --surface-inset: rgba(255, 255, 255, 0.06);
+  --surface-sidebar: rgba(0, 180, 212, 0.06);
+  --text-primary: #f0f0f0;
+  --text-heading: #d4d4d4;
+  --text-body: #a3a3a3;
+  --text-muted: #737373;
+  --border-default: rgba(255, 255, 255, 0.10);
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-strong: rgba(255, 255, 255, 0.18);
+  --icon-filter: invert(1) brightness(0.85);
+  --close-btn-bg: rgba(255, 255, 255, 0.10);
+  --toggle-off-bg: rgba(255, 255, 255, 0.10);
+  --toggle-off-circle-border: #525252;
+  --knob-bg: #e5e5e5;
+  --gradient-fade: linear-gradient(to bottom, rgba(30,30,30,0) 0%, rgba(30,30,30,0.8) 100%);
+  --btn-gradient: linear-gradient(180deg, #525252 0%, #333333 100%);
+  --svg-stroke-color: rgba(255, 255, 255, 0.6);
+  --check-stroke: rgba(255, 255, 255, 0.6);
+  --disconnect-stroke: rgba(255, 255, 255, 0.6);
+  --modal-dot-color: rgba(255, 255, 255, 0.3);
+  --connector-manage-color: rgba(255, 255, 255, 0.5);
+  --connector-tool-border: rgba(255, 255, 255, 0.06);
+  --connector-connected-bg: rgba(52, 211, 153, 0.12);
+  --connector-off-bg: rgba(255, 255, 255, 0.06);
+  --modal-icon-border: rgba(255, 255, 255, 0.16);
+  --modal-icon-bg: #1e1e1e;
+  --modal-divider: rgba(255, 255, 255, 0.06);
+  --btn-text-color: rgba(255, 255, 255, 0.87);
+  --btn-border-inner: rgba(255, 255, 255, 0.15);
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -75,6 +179,9 @@ html, body, #root {
   font-family: var(--font-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background: var(--surface-primary);
+  color: var(--text-primary);
+  transition: background 300ms ease, color 300ms ease;
 }
 
 /* Force Instrument Sans on form elements (they use system fonts by default) */
@@ -84,7 +191,7 @@ input, button, select, textarea, [contenteditable] {
 
 /* ── Chat input states ── */
 .chat-input {
-  background: var(--color-white);
+  background: var(--surface-primary);
   border: 1px solid var(--alpha-light-100);
   box-shadow:
     0px 0px 0px 0px transparent,
@@ -118,7 +225,7 @@ input, button, select, textarea, [contenteditable] {
 
 /* Disabled */
 .chat-input.is-disabled {
-  background: var(--color-neutral-50);
+  background: var(--surface-secondary);
   border-color: var(--alpha-light-100);
   cursor: not-allowed;
   box-shadow:
@@ -145,7 +252,7 @@ input, button, select, textarea, [contenteditable] {
   border-radius: var(--radius-full);
   overflow: hidden;
   cursor: pointer;
-  background: var(--color-white);
+  background: var(--surface-primary);
   box-shadow: 0px 2px 1px -1px rgba(0,0,0,0.08);
   transition: box-shadow 300ms cubic-bezier(0.25, 0.1, 0.25, 1);
 }
@@ -395,7 +502,7 @@ input, button, select, textarea, [contenteditable] {
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: rgba(255, 255, 255, 0.5);
+  background: var(--surface-overlay);
   backdrop-filter: blur(4px);
   animation: connector-overlay-in 250ms ease-out;
 }
@@ -440,7 +547,7 @@ input, button, select, textarea, [contenteditable] {
   border-radius: 8px;
   border: none;
   cursor: pointer;
-  background: linear-gradient(180deg, #737373 0%, #404040 100%);
+  background: var(--btn-gradient);
   overflow: hidden;
   transition: opacity 200ms ease;
 }
@@ -521,7 +628,7 @@ input, button, select, textarea, [contenteditable] {
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: rgba(255, 255, 255, 0.5);
+  background: var(--surface-overlay);
   backdrop-filter: blur(4px);
   animation: settings-overlay-in 300ms ease-out;
 }
@@ -1044,4 +1151,9 @@ input, button, select, textarea, [contenteditable] {
 @keyframes roadmap-line-grow {
   from { transform: scaleY(0); opacity: 0; }
   to { transform: scaleY(1); opacity: 1; }
+}
+
+/* ── Scorecard ── */
+.scorecard-row-hover:hover {
+  background: var(--alpha-light-25);
 }

@@ -1,11 +1,14 @@
 import Dashboard from './components/Dashboard';
+import { ThemeProvider } from './lib/ThemeContext';
 import './index.css';
 
 function App() {
   return (
-    <div className="w-full h-screen">
-      <Dashboard />
-    </div>
+    <ThemeProvider>
+      <div className="w-full h-screen">
+        <Dashboard />
+      </div>
+    </ThemeProvider>
   );
 }
 

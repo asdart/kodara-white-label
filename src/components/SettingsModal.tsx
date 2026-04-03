@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTheme } from '../lib/ThemeContext';
 
 import userIcon from '../assets/settings/0a08fec0874f75ea004524a85196267e35a2b937.svg';
 import envelopeIcon from '../assets/settings/7118723c9304bf0e4a298cb2fc875ab8aecc34a2.svg';
@@ -80,17 +81,15 @@ function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void 
         flexShrink: 0,
       }}
     >
-      {/* Track background */}
       <div
         style={{
           position: 'absolute',
           inset: 0,
           borderRadius: '1000px',
-          background: on ? '#0d6fff' : 'rgba(0,0,0,0.05)',
+          background: on ? '#0d6fff' : 'var(--toggle-off-bg)',
           transition: 'background 250ms cubic-bezier(0.4, 0, 0.2, 1)',
         }}
       />
-      {/* ON indicator: white "|" line */}
       <div
         style={{
           position: 'absolute',
@@ -116,7 +115,6 @@ function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void 
           }}
         />
       </div>
-      {/* Knob */}
       <div
         style={{
           position: 'absolute',
@@ -125,14 +123,13 @@ function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void 
           width: '32px',
           height: '20px',
           borderRadius: '100px',
-          background: 'white',
+          background: 'var(--knob-bg)',
           boxShadow: '0px 0px 1px rgba(0,0,0,0.05), 0px 0px 4px rgba(0,0,0,0.05), 0px 0px 44px rgba(0,0,0,0.1)',
           zIndex: 2,
           transform: on ? 'translateX(18px)' : 'translateX(0)',
           transition: 'transform 250ms cubic-bezier(0.4, 0, 0.2, 1)',
         }}
       />
-      {/* OFF indicator: "O" circle */}
       <div
         style={{
           position: 'absolute',
@@ -154,7 +151,7 @@ function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void 
             width: '6px',
             height: '6px',
             borderRadius: '100px',
-            border: '1.5px solid #c6c6c6',
+            border: '1.5px solid var(--toggle-off-circle-border)',
           }}
         />
       </div>
@@ -180,19 +177,19 @@ function SectionRow({
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingBottom: showBorder ? '10px' : '0',
-        borderBottom: showBorder ? '1px solid rgba(26,26,26,0.06)' : 'none',
+        borderBottom: showBorder ? '1px solid var(--border-subtle)' : 'none',
         width: '100%',
       }}
     >
       <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-        <img src={icon} alt="" style={{ width: '20px', height: '20px' }} />
+        <img src={icon} alt="" style={{ width: '20px', height: '20px', filter: 'var(--icon-filter)' }} />
         <span
           style={{
             fontFamily: 'var(--font-primary)',
             fontWeight: 500,
             fontSize: '14px',
             lineHeight: '20px',
-            color: 'rgba(26,26,26,0.6)',
+            color: 'var(--text-body)',
             whiteSpace: 'nowrap',
           }}
         >
@@ -220,7 +217,7 @@ function SectionHeader({ title, action }: { title: string; action?: string }) {
           fontWeight: 600,
           fontSize: '14px',
           lineHeight: '20px',
-          color: 'rgba(26,26,26,0.8)',
+          color: 'var(--text-heading)',
         }}
       >
         {title}
@@ -232,7 +229,7 @@ function SectionHeader({ title, action }: { title: string; action?: string }) {
             fontWeight: 600,
             fontSize: '14px',
             lineHeight: '20px',
-            color: 'rgba(26,26,26,0.8)',
+            color: 'var(--text-heading)',
             cursor: 'pointer',
           }}
         >
@@ -247,7 +244,7 @@ function SectionCard({ children }: { children: React.ReactNode }) {
   return (
     <div
       style={{
-        background: 'rgba(26,26,26,0.04)',
+        background: 'var(--surface-inset)',
         borderRadius: '16px',
         padding: '12px',
         display: 'flex',
@@ -282,7 +279,7 @@ function NotificationRow({
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingBottom: showBorder ? '10px' : '0',
-        borderBottom: showBorder ? '1px solid rgba(26,26,26,0.06)' : 'none',
+        borderBottom: showBorder ? '1px solid var(--border-subtle)' : 'none',
         width: '100%',
       }}
     >
@@ -297,8 +294,8 @@ function NotificationRow({
           lineHeight: '20px',
         }}
       >
-        <span style={{ color: 'rgba(26,26,26,0.8)' }}>{title}</span>
-        <span style={{ color: 'rgba(26,26,26,0.6)' }}>{subtitle}</span>
+        <span style={{ color: 'var(--text-heading)' }}>{title}</span>
+        <span style={{ color: 'var(--text-body)' }}>{subtitle}</span>
       </div>
       <Toggle on={on} onChange={onChange} />
     </div>
@@ -309,8 +306,145 @@ function PasswordDots() {
   return (
     <div style={{ display: 'flex', gap: '0px', alignItems: 'center' }}>
       {Array.from({ length: 10 }).map((_, i) => (
-        <img key={i} src={dotIcon} alt="" style={{ width: '8px', height: '8px' }} />
+        <img key={i} src={dotIcon} alt="" style={{ width: '8px', height: '8px', filter: 'var(--icon-filter)' }} />
       ))}
+    </div>
+  );
+}
+
+function ThemeSwitch({ isDark, onChange }: { isDark: boolean; onChange: (dark: boolean) => void }) {
+  return (
+    <button
+      onClick={() => onChange(!isDark)}
+      style={{
+        position: 'relative',
+        width: '54px',
+        height: '28px',
+        borderRadius: '1000px',
+        border: 'none',
+        cursor: 'pointer',
+        padding: '3px',
+        background: 'transparent',
+        flexShrink: 0,
+      }}
+    >
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          borderRadius: '1000px',
+          background: isDark
+            ? 'linear-gradient(135deg, #1e293b 0%, #334155 100%)'
+            : 'linear-gradient(135deg, #bfdbfe 0%, #93c5fd 100%)',
+          transition: 'background 350ms cubic-bezier(0.4, 0, 0.2, 1)',
+        }}
+      />
+      {/* Sun icon (light mode indicator) */}
+      <div
+        style={{
+          position: 'absolute',
+          left: '5px',
+          top: '50%',
+          transform: 'translateY(-50%)',
+          width: '16px',
+          height: '16px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1,
+          opacity: isDark ? 0 : 1,
+          transition: 'opacity 250ms ease',
+        }}
+      >
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="8" cy="8" r="3.5" stroke="#f59e0b" strokeWidth="1.5" />
+          <path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41" stroke="#f59e0b" strokeWidth="1.3" strokeLinecap="round" />
+        </svg>
+      </div>
+      {/* Moon icon (dark mode indicator) */}
+      <div
+        style={{
+          position: 'absolute',
+          right: '5px',
+          top: '50%',
+          transform: 'translateY(-50%)',
+          width: '16px',
+          height: '16px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1,
+          opacity: isDark ? 1 : 0,
+          transition: 'opacity 250ms ease',
+        }}
+      >
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M13.36 10.06A6.5 6.5 0 015.94 2.64 6 6 0 1013.36 10.06z" stroke="#e2e8f0" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </div>
+      {/* Knob */}
+      <div
+        style={{
+          position: 'absolute',
+          top: '3px',
+          left: '3px',
+          width: '22px',
+          height: '22px',
+          borderRadius: '100px',
+          background: isDark ? '#1e1e1e' : 'white',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.15), 0 0 1px rgba(0,0,0,0.1)',
+          zIndex: 2,
+          transform: isDark ? 'translateX(26px)' : 'translateX(0)',
+          transition: 'transform 350ms cubic-bezier(0.4, 0, 0.2, 1), background 350ms ease',
+        }}
+      />
+    </button>
+  );
+}
+
+function AppearanceSection() {
+  const { theme, setTheme } = useTheme();
+  const isDark = theme === 'dark';
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '11px', width: '100%' }}>
+      <SectionHeader title="Appearance" />
+      <SectionCard>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            width: '100%',
+          }}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+            <span
+              style={{
+                fontFamily: 'var(--font-primary)',
+                fontWeight: 500,
+                fontSize: '14px',
+                lineHeight: '20px',
+                color: 'var(--text-heading)',
+              }}
+            >
+              Dark mode
+            </span>
+            <span
+              style={{
+                fontFamily: 'var(--font-primary)',
+                fontWeight: 400,
+                fontSize: '12px',
+                lineHeight: '16px',
+                color: 'var(--text-body)',
+              }}
+            >
+              {isDark ? 'Using dark theme' : 'Using light theme'}
+            </span>
+          </div>
+          <ThemeSwitch isDark={isDark} onChange={(dark) => setTheme(dark ? 'dark' : 'light')} />
+        </div>
+      </SectionCard>
     </div>
   );
 }
@@ -333,28 +467,28 @@ function ChevronRow({
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingBottom: showBorder ? '10px' : '0',
-        borderBottom: showBorder ? '1px solid rgba(26,26,26,0.06)' : 'none',
+        borderBottom: showBorder ? '1px solid var(--border-subtle)' : 'none',
         width: '100%',
         cursor: 'pointer',
       }}
       onClick={onClick}
     >
       <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-        <img src={icon} alt="" style={{ width: '20px', height: '20px' }} />
+        <img src={icon} alt="" style={{ width: '20px', height: '20px', filter: 'var(--icon-filter)' }} />
         <span
           style={{
             fontFamily: 'var(--font-primary)',
             fontWeight: 500,
             fontSize: '14px',
             lineHeight: '20px',
-            color: 'rgba(26,26,26,0.6)',
+            color: 'var(--text-body)',
           }}
         >
           {label}
         </span>
       </div>
       <div style={{ width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-        <img src={chevronIcon} alt="" style={{ width: '6px', height: '10px' }} />
+        <img src={chevronIcon} alt="" style={{ width: '6px', height: '10px', filter: 'var(--icon-filter)' }} />
       </div>
     </div>
   );
@@ -367,7 +501,7 @@ const textValue = (text: string) => (
       fontWeight: 500,
       fontSize: '14px',
       lineHeight: '20px',
-      color: 'rgba(26,26,26,0.8)',
+      color: 'var(--text-heading)',
       whiteSpace: 'nowrap',
     }}
   >
@@ -424,7 +558,7 @@ function ConnectorModalCard({
             fontWeight: 600,
             fontSize: '14px',
             lineHeight: '20px',
-            color: 'rgba(26,26,26,0.8)',
+            color: 'var(--text-heading)',
           }}
         >
           {connector.name}
@@ -435,7 +569,7 @@ function ConnectorModalCard({
             fontWeight: 400,
             fontSize: '14px',
             lineHeight: '20px',
-            color: 'rgba(26,26,26,0.6)',
+            color: 'var(--text-body)',
           }}
         >
           {connector.description}
@@ -447,7 +581,7 @@ function ConnectorModalCard({
             display: 'inline-flex',
             alignItems: 'center',
             gap: '6px',
-            background: on ? 'rgba(16,104,68,0.08)' : 'rgba(26,26,26,0.04)',
+            background: on ? 'var(--connector-connected-bg)' : 'var(--connector-off-bg)',
             borderRadius: '999px',
             padding: on ? '4px 8px' : '4px 10px',
           }}
@@ -462,7 +596,7 @@ function ConnectorModalCard({
                 width: '6px',
                 height: '6px',
                 borderRadius: '50%',
-                background: 'rgba(26,26,26,0.3)',
+                background: 'var(--modal-dot-color)',
               }}
             />
           )}
@@ -473,7 +607,7 @@ function ConnectorModalCard({
               fontSize: '12px',
               lineHeight: '16px',
               letterSpacing: '-0.15px',
-              color: on ? '#106844' : 'rgba(26,26,26,0.6)',
+              color: on ? '#106844' : 'var(--text-body)',
             }}
           >
             {on ? `${connector.toolsCount} tools connected` : `Connect ${connector.toolsCount} tools`}
@@ -490,7 +624,7 @@ function ConnectorModalCard({
             onClick={(e) => { e.stopPropagation(); onClick(); }}
           >
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
-              <path d="M5.25 2.625H3.5C3.03587 2.625 2.59075 2.80937 2.26256 3.13756C1.93437 3.46575 1.75 3.91087 1.75 4.375V10.5C1.75 10.9641 1.93437 11.4092 2.26256 11.7374C2.59075 12.0656 3.03587 12.25 3.5 12.25H9.625C10.0891 12.25 10.5342 12.0656 10.8624 11.7374C11.1906 11.4092 11.375 10.9641 11.375 10.5V8.75M6.5625 7.4375L12.25 1.75M12.25 1.75H9.1875M12.25 1.75V4.8125" stroke="rgba(26,26,26,0.5)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M5.25 2.625H3.5C3.03587 2.625 2.59075 2.80937 2.26256 3.13756C1.93437 3.46575 1.75 3.91087 1.75 4.375V10.5C1.75 10.9641 1.93437 11.4092 2.26256 11.7374C2.59075 12.0656 3.03587 12.25 3.5 12.25H9.625C10.0891 12.25 10.5342 12.0656 10.8624 11.7374C11.1906 11.4092 11.375 10.9641 11.375 10.5V8.75M6.5625 7.4375L12.25 1.75M12.25 1.75H9.1875M12.25 1.75V4.8125" stroke="var(--connector-manage-color)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
             <span
               style={{
@@ -498,7 +632,7 @@ function ConnectorModalCard({
                 fontWeight: 500,
                 fontSize: '13px',
                 lineHeight: '18px',
-                color: 'rgba(26,26,26,0.5)',
+                color: 'var(--connector-manage-color)',
               }}
             >
               Manage
@@ -543,7 +677,7 @@ function ConnectorsView({
               fontWeight: 500,
               fontSize: '20px',
               lineHeight: '28px',
-              color: '#1a1a1a',
+              color: 'var(--text-primary)',
             }}
           >
             Connectors
@@ -554,7 +688,7 @@ function ConnectorsView({
               fontWeight: 400,
               fontSize: '14px',
               lineHeight: '20px',
-              color: 'rgba(26,26,26,0.6)',
+              color: 'var(--text-body)',
             }}
           >
             Integrate your tools to enhance your specialist.
@@ -566,7 +700,7 @@ function ConnectorsView({
             width: '28px',
             height: '28px',
             borderRadius: '999px',
-            background: 'rgba(26,26,26,0.06)',
+            background: 'var(--close-btn-bg)',
             border: 'none',
             cursor: 'pointer',
             display: 'flex',
@@ -576,7 +710,7 @@ function ConnectorsView({
             flexShrink: 0,
           }}
         >
-          <img src={closeIcon} alt="Close" style={{ width: '9px', height: '9px' }} />
+          <img src={closeIcon} alt="Close" style={{ width: '9px', height: '9px', filter: 'var(--icon-filter)' }} />
         </button>
       </div>
 
@@ -641,7 +775,7 @@ function ManageToolsView({
             }}
           >
             <svg width="7" height="12" viewBox="0 0 7 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M5.75 1L0.75 6L5.75 11" stroke="rgba(26,26,26,0.8)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M5.75 1L0.75 6L5.75 11" stroke="var(--text-heading)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
           <p
@@ -650,7 +784,7 @@ function ManageToolsView({
               fontWeight: 500,
               fontSize: '20px',
               lineHeight: '28px',
-              color: '#1a1a1a',
+              color: 'var(--text-primary)',
             }}
           >
             {connector.name}
@@ -662,7 +796,7 @@ function ManageToolsView({
             width: '28px',
             height: '28px',
             borderRadius: '999px',
-            background: 'rgba(26,26,26,0.06)',
+            background: 'var(--close-btn-bg)',
             border: 'none',
             cursor: 'pointer',
             display: 'flex',
@@ -672,7 +806,7 @@ function ManageToolsView({
             flexShrink: 0,
           }}
         >
-          <img src={closeIcon} alt="Close" style={{ width: '9px', height: '9px' }} />
+          <img src={closeIcon} alt="Close" style={{ width: '9px', height: '9px', filter: 'var(--icon-filter)' }} />
         </button>
       </div>
 
@@ -684,7 +818,7 @@ function ManageToolsView({
             fontWeight: 500,
             fontSize: '14px',
             lineHeight: '20px',
-            color: 'rgba(26,26,26,0.8)',
+            color: 'var(--text-heading)',
           }}
         >
           Connected tools
@@ -697,18 +831,18 @@ function ManageToolsView({
             gap: '6px',
             padding: '6px 12px',
             borderRadius: '999px',
-            border: '1px solid rgba(26,26,26,0.09)',
-            background: 'white',
+            border: '1px solid var(--border-default)',
+            background: 'var(--surface-primary)',
             cursor: 'pointer',
             fontFamily: 'var(--font-primary)',
             fontWeight: 500,
             fontSize: '13px',
             lineHeight: '18px',
-            color: 'rgba(26,26,26,0.6)',
+            color: 'var(--text-body)',
           }}
         >
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M8.5 5.5L10.25 3.75M10.25 3.75L11.75 2.25M10.25 3.75L11.75 5.25M10.25 3.75L8.75 2.25M5.5 8.5L3.75 10.25M3.75 10.25L2.25 11.75M3.75 10.25L2.25 8.75M3.75 10.25L5.25 11.75M6 8L8 6" stroke="rgba(26,26,26,0.6)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M8.5 5.5L10.25 3.75M10.25 3.75L11.75 2.25M10.25 3.75L11.75 5.25M10.25 3.75L8.75 2.25M5.5 8.5L3.75 10.25M3.75 10.25L2.25 11.75M3.75 10.25L2.25 8.75M3.75 10.25L5.25 11.75M6 8L8 6" stroke="var(--disconnect-stroke)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
           Disconnect
         </button>
@@ -724,7 +858,7 @@ function ManageToolsView({
               alignItems: 'center',
               justifyContent: 'space-between',
               padding: '12px 0',
-              borderTop: i > 0 ? '1px solid rgba(26,26,26,0.06)' : 'none',
+              borderTop: i > 0 ? '1px solid var(--connector-tool-border)' : 'none',
             }}
           >
             <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1, minWidth: 0 }}>
@@ -734,7 +868,7 @@ function ManageToolsView({
                   fontWeight: 600,
                   fontSize: '14px',
                   lineHeight: '20px',
-                  color: 'rgba(26,26,26,0.8)',
+                  color: 'var(--text-heading)',
                 }}
               >
                 {tool.name}
@@ -745,7 +879,7 @@ function ManageToolsView({
                   fontWeight: 400,
                   fontSize: '14px',
                   lineHeight: '20px',
-                  color: 'rgba(26,26,26,0.6)',
+                  color: 'var(--text-body)',
                 }}
               >
                 {tool.description}
@@ -782,8 +916,8 @@ function FacebookConnectModal({ onClose, onConnect }: { onClose: () => void; onC
           width: '100%',
           maxWidth: '480px',
           borderRadius: '16px',
-          border: '1px solid rgba(26,26,26,0.09)',
-          background: 'rgba(255, 255, 255, 0.6)',
+          border: '1px solid var(--border-default)',
+          background: 'var(--surface-elevated)',
           backdropFilter: 'blur(10px)',
           boxShadow:
             '0px 3px 6px 0px rgba(0,0,0,0.04), 0px 11px 11px 0px rgba(0,0,0,0.03), 0px 24px 15px 0px rgba(0,0,0,0.02), 0px 43px 17px 0px rgba(0,0,0,0.01), 0px 67px 19px 0px rgba(0,0,0,0)',
@@ -801,7 +935,7 @@ function FacebookConnectModal({ onClose, onConnect }: { onClose: () => void; onC
               width: '28px',
               height: '28px',
               borderRadius: '999px',
-              background: 'rgba(26,26,26,0.06)',
+              background: 'var(--close-btn-bg)',
               border: 'none',
               cursor: 'pointer',
               display: 'flex',
@@ -811,7 +945,7 @@ function FacebookConnectModal({ onClose, onConnect }: { onClose: () => void; onC
             }}
           >
             <svg width="9" height="9" viewBox="0 0 9 9" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M7.72 8.78C7.866 8.928 8.058 9 8.25 9H8.25C8.443 9 8.635 8.927 8.78 8.78C9.074 8.488 9.074 8.013 8.78 7.72L5.562 4.5L8.78 1.282C9.074 0.989 9.074 0.514 8.78 0.22C8.488 -0.072 8.013 -0.072 7.72 0.22L4.5 3.44L1.28 0.22C0.988 -0.073 0.513 -0.073 0.22 0.22C-0.073 0.513 -0.073 0.988 0.22 1.28L3.44 4.5L0.22 7.72C-0.073 8.013 -0.073 8.488 0.22 8.78C0.366 8.928 0.558 9 0.75 9L0.75 9C0.943 9 1.135 8.928 1.28 8.782L4.5 5.562L7.72 8.78Z" fill="rgba(26,26,26,0.6)" />
+              <path d="M7.72 8.78C7.866 8.928 8.058 9 8.25 9H8.25C8.443 9 8.635 8.927 8.78 8.78C9.074 8.488 9.074 8.013 8.78 7.72L5.562 4.5L8.78 1.282C9.074 0.989 9.074 0.514 8.78 0.22C8.488 -0.072 8.013 -0.072 7.72 0.22L4.5 3.44L1.28 0.22C0.988 -0.073 0.513 -0.073 0.22 0.22C-0.073 0.513 -0.073 0.988 0.22 1.28L3.44 4.5L0.22 7.72C-0.073 8.013 -0.073 8.488 0.22 8.78C0.366 8.928 0.558 9 0.75 9L0.75 9C0.943 9 1.135 8.928 1.28 8.782L4.5 5.562L7.72 8.78Z" fill="var(--svg-stroke-color)" />
             </svg>
           </button>
 
@@ -822,7 +956,7 @@ function FacebookConnectModal({ onClose, onConnect }: { onClose: () => void; onC
                 fontWeight: 500,
                 fontSize: '20px',
                 lineHeight: '28px',
-                color: '#1a1a1a',
+                color: 'var(--text-primary)',
               }}
             >
               Facebook Ads
@@ -830,7 +964,7 @@ function FacebookConnectModal({ onClose, onConnect }: { onClose: () => void; onC
 
             <div
               style={{
-                background: 'rgba(26,26,26,0.04)',
+                background: 'var(--surface-inset)',
                 borderRadius: '16px',
                 width: '100%',
                 position: 'relative',
@@ -900,8 +1034,8 @@ function FacebookConnectModal({ onClose, onConnect }: { onClose: () => void; onC
                     width: '72px',
                     height: '72px',
                     borderRadius: '20px',
-                    background: 'white',
-                    border: '1px solid rgba(26,26,26,0.2)',
+                    background: 'var(--modal-icon-bg)',
+                    border: '1px solid var(--modal-icon-border)',
                     display: 'flex',
                     alignItems: 'center',
                     padding: '16px',
@@ -923,7 +1057,7 @@ function FacebookConnectModal({ onClose, onConnect }: { onClose: () => void; onC
                   fontWeight: 600,
                   fontSize: '14px',
                   lineHeight: '20px',
-                  color: 'rgba(26,26,26,0.8)',
+                  color: 'var(--text-heading)',
                 }}
               >
                 Connect your Facebook Business
@@ -934,7 +1068,7 @@ function FacebookConnectModal({ onClose, onConnect }: { onClose: () => void; onC
                   fontWeight: 500,
                   fontSize: '14px',
                   lineHeight: '20px',
-                  color: 'rgba(26,26,26,0.6)',
+                  color: 'var(--text-body)',
                 }}
               >
                 Facebook Ads syncs campaigns with Kodara. By continuing, you
@@ -942,7 +1076,7 @@ function FacebookConnectModal({ onClose, onConnect }: { onClose: () => void; onC
               </p>
             </div>
 
-            <div style={{ width: '100%', height: '1px', background: 'rgba(26,26,26,0.06)' }} />
+            <div style={{ width: '100%', height: '1px', background: 'var(--modal-divider)' }} />
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <p
@@ -951,7 +1085,7 @@ function FacebookConnectModal({ onClose, onConnect }: { onClose: () => void; onC
                   fontWeight: 600,
                   fontSize: '14px',
                   lineHeight: '20px',
-                  color: 'rgba(26,26,26,0.8)',
+                  color: 'var(--text-heading)',
                 }}
               >
                 Tools:
@@ -966,7 +1100,7 @@ function FacebookConnectModal({ onClose, onConnect }: { onClose: () => void; onC
               ].map((tool) => (
                 <div key={tool} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <svg width="14" height="10" viewBox="0 0 14 10" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
-                    <path d="M1 5L5 9L13 1" stroke="rgba(26,26,26,0.6)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M1 5L5 9L13 1" stroke="var(--check-stroke)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                   <span
                     style={{
@@ -974,7 +1108,7 @@ function FacebookConnectModal({ onClose, onConnect }: { onClose: () => void; onC
                       fontWeight: 400,
                       fontSize: '14px',
                       lineHeight: '20px',
-                      color: 'rgba(26,26,26,0.6)',
+                      color: 'var(--text-body)',
                     }}
                   >
                     {tool}
@@ -994,7 +1128,7 @@ function FacebookConnectModal({ onClose, onConnect }: { onClose: () => void; onC
                 fontSize: '14px',
                 lineHeight: '20px',
                 letterSpacing: '-0.15px',
-                color: 'rgba(255,255,255,0.8)',
+                color: 'var(--btn-text-color)',
                 textAlign: 'center',
               }}
             >
@@ -1005,7 +1139,7 @@ function FacebookConnectModal({ onClose, onConnect }: { onClose: () => void; onC
                 position: 'absolute',
                 inset: 0,
                 borderRadius: '8px',
-                border: '1.5px solid white',
+                border: '1.5px solid var(--btn-border-inner)',
                 filter: 'blur(0.2px)',
                 pointerEvents: 'none',
               }}
@@ -1065,8 +1199,8 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
           maxWidth: '480px',
           maxHeight: '600px',
           borderRadius: '16px',
-          border: '1px solid rgba(26,26,26,0.09)',
-          background: 'rgba(255, 255, 255, 0.6)',
+          border: '1px solid var(--border-default)',
+          background: 'var(--surface-elevated)',
           backdropFilter: 'blur(10px)',
           boxShadow:
             '0px 3px 6px 0px rgba(0,0,0,0.04), 0px 11px 11px 0px rgba(0,0,0,0.03), 0px 24px 15px 0px rgba(0,0,0,0.02), 0px 43px 17px 0px rgba(0,0,0,0.01), 0px 67px 19px 0px rgba(0,0,0,0)',
@@ -1117,7 +1251,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
                       fontWeight: 500,
                       fontSize: '20px',
                       lineHeight: '28px',
-                      color: '#1a1a1a',
+                      color: 'var(--text-primary)',
                     }}
                   >
                     Settings
@@ -1128,7 +1262,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
                       width: '28px',
                       height: '28px',
                       borderRadius: '999px',
-                      background: 'rgba(26,26,26,0.06)',
+                      background: 'var(--close-btn-bg)',
                       border: 'none',
                       cursor: 'pointer',
                       display: 'flex',
@@ -1138,7 +1272,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
                       flexShrink: 0,
                     }}
                   >
-                    <img src={closeIcon} alt="Close" style={{ width: '9px', height: '9px' }} />
+                    <img src={closeIcon} alt="Close" style={{ width: '9px', height: '9px', filter: 'var(--icon-filter)' }} />
                   </button>
                 </div>
 
@@ -1159,6 +1293,9 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
                     <SectionRow icon={lockIcon} label="Password" value={<PasswordDots />} showBorder={false} />
                   </SectionCard>
                 </div>
+
+                {/* Appearance */}
+                <AppearanceSection />
 
                 {/* Customize your specialist */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '11px', width: '100%' }}>
@@ -1211,7 +1348,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
                     left: 0,
                     right: 0,
                     height: '24px',
-                    background: 'linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,0.6) 100%)',
+                    background: 'var(--gradient-fade)',
                     pointerEvents: 'none',
                   }}
                 />
@@ -1228,7 +1365,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
                       fontSize: '14px',
                       lineHeight: '20px',
                       letterSpacing: '-0.15px',
-                      color: 'rgba(255,255,255,0.8)',
+                      color: 'var(--btn-text-color)',
                       textAlign: 'center',
                     }}
                   >
@@ -1239,7 +1376,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
                       position: 'absolute',
                       inset: 0,
                       borderRadius: '8px',
-                      border: '1.5px solid white',
+                      border: '1.5px solid var(--btn-border-inner)',
                       filter: 'blur(0.2px)',
                       pointerEvents: 'none',
                     }}
@@ -1299,8 +1436,8 @@ export function ConnectorsModal({ onClose }: { onClose: () => void }) {
           maxWidth: '480px',
           maxHeight: '600px',
           borderRadius: '16px',
-          border: '1px solid rgba(26,26,26,0.09)',
-          background: 'rgba(255, 255, 255, 0.6)',
+          border: '1px solid var(--border-default)',
+          background: 'var(--surface-elevated)',
           backdropFilter: 'blur(10px)',
           boxShadow:
             '0px 3px 6px 0px rgba(0,0,0,0.04), 0px 11px 11px 0px rgba(0,0,0,0.03), 0px 24px 15px 0px rgba(0,0,0,0.02), 0px 43px 17px 0px rgba(0,0,0,0.01), 0px 67px 19px 0px rgba(0,0,0,0)',

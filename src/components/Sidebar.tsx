@@ -32,7 +32,8 @@ export default function Sidebar({
         paddingRight: '0px',
         paddingTop: '8px',
         paddingBottom: '8px',
-        background: 'var(--color-white)',
+        background: 'var(--surface-primary)',
+        transition: 'background 300ms ease',
       }}
     >
       <div
@@ -41,7 +42,7 @@ export default function Sidebar({
           width: '100%',
           minWidth: 0,
           borderRadius: '16px',
-          background: 'rgba(0, 180, 212, 0.05)',
+          background: 'var(--surface-sidebar)',
           backdropFilter: 'blur(6px)',
           gap: '1px',
         }}

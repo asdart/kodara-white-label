@@ -2,7 +2,7 @@ const suggestions = [
   "What's the difference between physical hunger and emotional hunger, and how do I tell them apart?",
   "What does progress actually look like in the Stressless Eating journey — what stages will I go through?",
   "I just had this for lunch — can you analyze it and break down the nutrition?",
-  "I don't have years for therapy — how quickly can I change my mindset around food?",
+  "Score this sales call transcript and give me a detailed breakdown",
 ];
 
 export const simulatedResponses: Record<string, string> = {
@@ -16,7 +16,7 @@ export const simulatedResponses: Record<string, string> = {
     `Here's a full breakdown of your meal. I identified the key components and estimated the macros based on the portion sizes visible in the photo.\n\nMeal identified: Grilled chicken salad bowl with mixed greens, cherry tomatoes, avocado slices, roasted sweet potato, quinoa, and a lemon-tahini dressing.\n\n| Nutrient | Amount | % Daily Value |\n| --- | --- | --- |\n| Calories | 485 kcal | 24% |\n| Protein | 38g | 76% |\n| Carbohydrates | 42g | 14% |\n| Dietary Fiber | 9g | 32% |\n| Total Fat | 18g | 23% |\n| Saturated Fat | 3.2g | 16% |\n| Sodium | 520mg | 23% |\n\nThis is a really well-balanced meal, Marcos — great job. Here's what stands out:\n\nThe protein-to-carb ratio is solid. 38g of protein from the chicken will keep you satiated for 4–5 hours, which means fewer cravings between meals. That's exactly what we want.\n\nYour fiber is above average for a single meal at 9g. This supports gut health and helps stabilize blood sugar — which directly impacts mood and energy levels in the afternoon.\n\nThe fat profile is mostly unsaturated from the avocado and tahini. This is the kind of fat that supports hormone balance and keeps you feeling satisfied without the heavy crash.\n\nOne small note: sodium is moderate at 520mg. If you're watching salt intake, you could go lighter on the dressing or swap to a simple lemon and olive oil drizzle.\n\nOverall — this is nutrient-dense, balanced, and genuinely enjoyable. No changes needed. Keep eating like this and your body will thank you.`,
 
   [suggestions[3]]:
-    `I get it — you want results, not years on a couch. Good news: meaningful shifts can happen faster than you think.\n\nHere's what to expect:\n\n• Within the first 2 weeks, most clients notice a shift in awareness. You'll start catching patterns you've been on autopilot with for years — that alone changes behavior.\n\n• By 4–6 weeks, you'll have practical tools you're actively using: how to sit with a craving, how to eat without guilt, how to handle social pressure around food.\n\n• By 3 months, clients typically report that food takes up significantly less mental space. The obsessive thinking quiets down.\n\nThis isn't traditional therapy — it's targeted, skill-based coaching. We focus on specific behaviors and beliefs, not open-ended exploration.\n\nThat said, deeper patterns (trauma, identity, control) sometimes surface, and that's okay — we address them as they come up, practically and efficiently.\n\nYou don't need to "fix" everything to feel different. One good insight, applied consistently, can change everything.`,
+    `I've analyzed your discovery call transcript. Here's a detailed breakdown with specific moments and coaching tips for each area.\n\n[SCORECARD]\n74|B|Discovery Call|Dec 15, 2024|32 min|Solid discovery and rapport, but your close and objection handling need targeted work. You're leaving revenue on the table.\nDiscovery Quality|A-|82|#22c55e\nObjection Handling|C+|65|#eab308\nValue Articulation|B+|78|#22c55e\nClose Attempts|C|58|#ef4444\nRapport Building|A|88|#22c55e\nNext Steps|B-|72|#eab308\n[/SCORECARD]`,
 };
 
 export interface ThinkingStep {
@@ -56,11 +56,12 @@ export const simulatedThinkingSteps: Record<string, ThinkingStepsConfig> = {
     ],
   },
   [suggestions[3]]: {
-    header: 'Updated to do list for a mindset change question',
+    header: 'Updated to do list for a sales call scoring question',
     steps: [
-      { label: 'Skill', children: ['Launching skill: Coaching timeline estimator'] },
-      { label: 'Estimating expected timelines', children: ['Analyzing coaching data for typical progress rates', 'Breaking into 2-week, 6-week, and 3-month milestones'] },
-      { label: 'Differentiating approaches', children: ['Comparing skill-based coaching vs. traditional therapy', 'Compiling quick-win strategies for early momentum'] },
+      { label: 'Skill', children: ['Launching skill: Sales call analyzer'] },
+      { label: 'Parsing transcript content', children: ['Identifying key conversation segments', 'Extracting objections, questions, and closing attempts'] },
+      { label: 'Scoring performance categories', children: ['Evaluating discovery quality and rapport', 'Assessing objection handling and close attempts'] },
+      { label: 'Generating scorecard report' },
     ],
   },
 };
