@@ -354,3 +354,53 @@ export function StopIcon({ className = "w-5 h-5", color = LIGHT_600 }: { classNa
     </svg>
   );
 }
+
+/** Icon/Large/House — matches Figma Whitelabel-App (node 3017:17421) */
+export function HouseIcon({ className = "w-5 h-5", color = LIGHT_600 }: { className?: string; color?: string }) {
+  return (
+    <div
+      className={className}
+      style={{
+        display: 'flex',
+        width: '20px',
+        height: '20px',
+        justifyContent: 'center',
+        alignItems: 'center',
+        flexShrink: 0,
+      }}
+    >
+      <svg width="14" height="16" viewBox="0 0 14 15.744" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path
+          fillRule="evenodd"
+          clipRule="evenodd"
+          d="M5.85496 0.516945C6.5145 -0.0142907 7.4855 -0.0142907 8.14504 0.516945L13.4419 4.78468C13.7935 5.06799 14 5.50191 14 5.96057V13.4945C14 14.7395 12.9665 15.7438 11.6927 15.7438H10.0233C9.10153 15.7438 8.35455 15.0182 8.35455 14.1234V11.0231C8.35455 10.844 8.20518 10.6989 8.02093 10.6989H5.97907C5.79482 10.6989 5.64545 10.844 5.64545 11.0231V14.1234C5.64545 15.0182 4.89847 15.7438 3.97676 15.7438H2.30727C1.03346 15.7438 0 14.7395 0 13.4945V5.96057C0 5.50191 0.206494 5.06799 0.55815 4.78468L5.85496 0.516945ZM7.21041 1.6442C7.08967 1.54702 6.91033 1.54702 6.78959 1.6442L1.49278 5.91194C1.43873 5.95548 1.40741 6.01918 1.40741 6.08712V13.4945C1.40741 13.9777 1.81065 14.3672 2.30727 14.3672H3.97676C4.12136 14.3672 4.23804 14.2538 4.23804 14.1234V11.0231C4.23804 10.0837 5.01657 9.32229 5.97907 9.32229H8.02093C8.98343 9.32229 9.76196 10.0837 9.76196 11.0231V14.1234C9.76196 14.2538 9.87864 14.3672 10.0233 14.3672H11.6927C12.1893 14.3672 12.5926 13.9777 12.5926 13.4945V6.08712C12.5926 6.01918 12.5613 5.95548 12.5072 5.91194L7.21041 1.6442Z"
+          fill={color}
+        />
+      </svg>
+    </div>
+  );
+}
+
+/** Calendar icon — matches Figma Whitelabel-App overdue pill (node I3151:13282;3151:13157)
+ *  Artwork is exactly 12×12.8 (the Figma "Date icon" 16×16 frame embeds this artwork). */
+export function CalendarIcon({ className, color = LIGHT_600 }: { className?: string; color?: string }) {
+  return (
+    <svg
+      className={className}
+      width="12"
+      height="12.8"
+      viewBox="0 0 12 12.8"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden
+      style={{ display: 'block', flexShrink: 0 }}
+    >
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M3.25 0C3.66421 0 4 0.335786 4 0.75V1.5H8V0.75C8 0.335786 8.33579 0 8.75 0C9.16421 0 9.5 0.335786 9.5 0.75V1.55C10.6217 1.7889 11.5 2.78566 11.5 4V10C11.5 11.4307 10.4307 12.5 9 12.5H3C1.56929 12.5 0.5 11.4307 0.5 10V4C0.5 2.78566 1.37833 1.7889 2.5 1.55V0.75C2.5 0.335786 2.83579 0 3.25 0ZM2 4.5V10C2 10.6022 2.39786 11 3 11H9C9.60214 11 10 10.6022 10 10V4.5H2ZM10 3H2C2 2.44772 2.44772 2 3 2H9C9.55228 2 10 2.44772 10 3Z"
+        fill={color}
+      />
+    </svg>
+  );
+}

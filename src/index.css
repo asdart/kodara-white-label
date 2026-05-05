@@ -42,6 +42,12 @@
   --alpha-brand-50: rgba(16, 104, 68, 0.06);
   --alpha-brand-950: rgba(16, 104, 68, 0.92);
 
+  /* Red — matches Figma red/{50,100,200,900} */
+  --color-red-50: #fef2f2;
+  --color-red-100: #fee2e2;
+  --color-red-200: #fecaca;
+  --color-red-900: #7f1d1d;
+
   /* ── Semantic surface & text tokens (light) ── */
   --surface-primary: #ffffff;
   --surface-secondary: #fafafa;
@@ -91,7 +97,12 @@
 
   --heading-h4-size: 32px;
   --heading-h4-line: 40px;
+  --heading-h6-size: 20px;
+  --heading-h6-line: 28px;
   --heading-h1-spacing: -0.5px;
+
+  --label-2-size: 14px;
+  --label-2-line: 20px;
 
   /* ── Figma Radius Tokens ── */
   --radius-full: 999px;
@@ -130,6 +141,11 @@
 
   --alpha-brand-50: rgba(52, 211, 153, 0.10);
   --alpha-brand-950: rgba(52, 211, 153, 0.92);
+
+  --color-red-50: rgba(220, 38, 38, 0.10);
+  --color-red-100: rgba(220, 38, 38, 0.30);
+  --color-red-200: rgba(220, 38, 38, 0.50);
+  --color-red-900: #fca5a5;
 
   --surface-primary: #161616;
   --surface-secondary: #1e1e1e;
@@ -758,6 +774,59 @@ input, button, select, textarea, [contenteditable] {
 .chat-card-enter {
   opacity: 0;
   animation: chat-card-fade-slide-up 400ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-card-enter {
+    opacity: 1;
+    animation: none;
+    transform: none;
+  }
+}
+
+/* ── Home page task card — hover/focus state matches Figma node 3151:13207 ── */
+.home-task-card {
+  --home-task-card-bg: var(--alpha-dark-900);
+  --home-task-card-border: var(--alpha-light-100);
+  --home-task-card-text: var(--alpha-light-600);
+  background: var(--home-task-card-bg);
+  border: 1px solid var(--home-task-card-border);
+  transition:
+    background 150ms ease,
+    border-color 150ms ease,
+    box-shadow 200ms ease;
+}
+
+.home-task-card.home-task-card--overdue {
+  --home-task-card-border: var(--color-red-100);
+}
+
+.home-task-card .home-task-card__text {
+  color: var(--home-task-card-text);
+  transition: color 150ms ease;
+}
+
+.home-task-card .home-task-card__label {
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+
+.home-task-card:hover,
+.home-task-card:focus-visible {
+  --home-task-card-bg: var(--color-neutral-50);
+  --home-task-card-border: var(--alpha-light-200);
+  --home-task-card-text: var(--alpha-light-900);
+  outline: none;
+}
+
+.home-task-card.home-task-card--overdue:hover,
+.home-task-card.home-task-card--overdue:focus-visible {
+  --home-task-card-border: var(--color-red-200);
+}
+
+.home-task-card:hover .home-task-card__label,
+.home-task-card:focus-visible .home-task-card__label {
+  opacity: 1;
 }
 
 /* ── Chat bubble entrance ── */

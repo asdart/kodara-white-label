@@ -4,6 +4,7 @@ import ChatInput from './ChatInput';
 import ConnectorsBar from './ConnectorsBar';
 import SuggestionCards, { simulatedResponses, simulatedThinkingSteps, simulatedImages } from './SuggestionCards';
 import type { ThinkingStepsConfig } from './SuggestionCards';
+import HomePage from './HomePage';
 import MyChatsPage from './MyChatsPage';
 import ChatPage from './ChatPage';
 import ConnectorsPage, { FacebookConnectModal } from './ConnectorsPage';
@@ -49,7 +50,7 @@ export default function Dashboard() {
 
   /* Show connectors bar on refresh (initial mount) and whenever user returns to New task from another page */
   useEffect(() => {
-    if (currentPage === 'home' && prevPageRef.current !== undefined && prevPageRef.current !== 'home') {
+    if (currentPage === 'new-task' && prevPageRef.current !== undefined && prevPageRef.current !== 'new-task') {
       setShowConnectorsBar(true);
     }
     prevPageRef.current = currentPage;
@@ -112,7 +113,7 @@ export default function Dashboard() {
           simulatedResponse={chatSimulatedResponse}
           simulatedSteps={chatSimulatedSteps}
           simulatedImage={chatSimulatedImage}
-          onNewTask={() => setCurrentPage('home')}
+          onNewTask={() => setCurrentPage('new-task')}
         />
       ) : currentPage === 'tasks' ? (
         <MyChatsPage key="tasks" />
@@ -120,8 +121,14 @@ export default function Dashboard() {
         <div key="connectors" className="flex flex-col flex-1 min-h-0 min-w-0 h-full overflow-hidden">
           <ConnectorsPage />
         </div>
+      ) : currentPage === 'home' ? (
+        <HomePage
+          key="home"
+          onCollapsedInputClick={() => { setPrefillText(undefined); setPrefillConnector(undefined); setCurrentPage('new-task'); }}
+          onSeeAllTasks={() => setCurrentPage('tasks')}
+        />
       ) : (
-        <div key="home" className="flex flex-col flex-1 min-h-0 min-w-0 relative h-full">
+        <div key="new-task" className="flex flex-col flex-1 min-h-0 min-w-0 relative h-full">
           {/* Top bar */}
           <div
             className="flex items-center justify-between shrink-0"
