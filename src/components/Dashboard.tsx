@@ -7,6 +7,7 @@ import type { ThinkingStepsConfig } from './SuggestionCards';
 import HomePage from './HomePage';
 import MyChatsPage from './MyChatsPage';
 import ChatPage from './ChatPage';
+import PlanPage from './PlanPage';
 import ConnectorsPage, { FacebookConnectModal } from './ConnectorsPage';
 import { ConnectorsModal } from './SettingsModal';
 import SettingsModal from './SettingsModal';
@@ -21,6 +22,7 @@ export default function Dashboard() {
   const [chatSimulatedResponse, setChatSimulatedResponse] = useState<string | undefined>();
   const [chatSimulatedSteps, setChatSimulatedSteps] = useState<ThinkingStepsConfig | undefined>();
   const [chatSimulatedImage, setChatSimulatedImage] = useState<string | undefined>();
+  const [chatTaskTitle, setChatTaskTitle] = useState<string | undefined>();
   const [chatKey, setChatKey] = useState(0);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -61,11 +63,12 @@ export default function Dashboard() {
     setChatSimulatedResponse(undefined);
     setChatSimulatedSteps(undefined);
     setChatSimulatedImage(undefined);
+    setChatTaskTitle(undefined);
     setChatKey((k) => k + 1);
     setCurrentPage('chat');
   }, []);
 
-  const startSimulatedChat = useCallback((message: string) => {
+  const startSimulatedChat = useCallback((message: string, taskTitle?: string) => {
     const response = simulatedResponses[message];
     const steps = simulatedThinkingSteps[message];
     const image = simulatedImages[message];
@@ -73,6 +76,7 @@ export default function Dashboard() {
     setChatSimulatedResponse(response);
     setChatSimulatedSteps(steps);
     setChatSimulatedImage(image);
+    setChatTaskTitle(taskTitle);
     setChatKey((k) => k + 1);
     setCurrentPage('chat');
   }, []);
@@ -113,10 +117,18 @@ export default function Dashboard() {
           simulatedResponse={chatSimulatedResponse}
           simulatedSteps={chatSimulatedSteps}
           simulatedImage={chatSimulatedImage}
+          taskTitle={chatTaskTitle}
           onNewTask={() => setCurrentPage('new-task')}
         />
       ) : currentPage === 'tasks' ? (
         <MyChatsPage key="tasks" />
+      ) : currentPage === 'plan' ? (
+        <PlanPage
+          key="plan"
+          onNewTask={() => setCurrentPage('home')}
+          onStartChat={(text) => startChat(text)}
+          onAskAiCoach={(task) => startChat(`Help me with: ${task.title}`)}
+        />
       ) : currentPage === 'connectors' ? (
         <div key="connectors" className="flex flex-col flex-1 min-h-0 min-w-0 h-full overflow-hidden">
           <ConnectorsPage />
@@ -126,6 +138,7 @@ export default function Dashboard() {
           key="home"
           onCollapsedInputClick={() => { setPrefillText(undefined); setPrefillConnector(undefined); setCurrentPage('new-task'); }}
           onSeeAllTasks={() => setCurrentPage('tasks')}
+          onStartSimulatedChat={startSimulatedChat}
         />
       ) : (
         <div key="new-task" className="flex flex-col flex-1 min-h-0 min-w-0 relative h-full">

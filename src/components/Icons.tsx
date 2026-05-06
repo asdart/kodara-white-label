@@ -404,3 +404,79 @@ export function CalendarIcon({ className, color = LIGHT_600 }: { className?: str
     </svg>
   );
 }
+
+/** Book / plan icon — used for the Plan sidebar nav item. */
+export function BookIcon({ className = "w-5 h-5", color = LIGHT_600 }: { className?: string; color?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path
+        d="M3.333 4.167A1.667 1.667 0 015 2.5h3.333c.92 0 1.667.747 1.667 1.667v11.666c0-.92-.746-1.666-1.667-1.666H3.333V4.167z"
+        stroke={color}
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M16.667 4.167A1.667 1.667 0 0015 2.5h-3.333c-.92 0-1.667.747-1.667 1.667v11.666c0-.92.746-1.666 1.667-1.666h5V4.167z"
+        stroke={color}
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+/** Chevron right — row affordance on plan/list items. */
+export function ChevronRightIcon({ className = "w-5 h-5", color = LIGHT_600 }: { className?: string; color?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M7.5 4.5l6 5.5-6 5.5" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** Unchecked checkbox — square with rounded corners. */
+export function CheckboxEmptyIcon({ className = "w-5 h-5", color = LIGHT_600 }: { className?: string; color?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="3.25" y="3.25" width="13.5" height="13.5" rx="3.5" stroke={color} strokeWidth="1.5" />
+    </svg>
+  );
+}
+
+/** Checked checkbox — filled square with white checkmark. */
+export function CheckboxCheckedIcon({ className = "w-5 h-5", color = LIGHT_600 }: { className?: string; color?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="2.5" y="2.5" width="15" height="15" rx="4" fill={color} />
+      <path d="M6 10.25l2.75 2.75L14 7.75" stroke="var(--surface-primary)" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** Check-circle icon — matches Figma `Product_button` "Mark as done" CTA (node 3169:25118).
+ *  12×12 artwork, intended to sit inside a 20×20 icon frame like the other pill buttons. */
+export function CheckCircleIcon({ className, color = LIGHT_600 }: { className?: string; color?: string }) {
+  return (
+    <svg
+      className={className}
+      width="12"
+      height="12"
+      viewBox="0 0 12 12"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden
+      style={{ display: 'block', flexShrink: 0 }}
+    >
+      <circle cx="6" cy="6" r="5.25" stroke={color} strokeWidth="1.5" />
+      <path
+        d="M3.75 6L5.25 7.5L8.25 4.5"
+        stroke={color}
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   HouseIcon,
   CalendarIcon,
@@ -7,20 +7,33 @@ import {
   MicIcon,
   DotsVerticalIcon,
   PlayIcon,
+  XMarkIcon,
+  CheckCircleIcon,
+  SparkleNavIcon,
 } from './Icons';
+import { GENERATE_ANGLES_PROMPT } from './SuggestionCards';
 
 export interface HomePageProps {
   userName?: string;
   onCollapsedInputClick?: () => void;
   onSeeAllTasks?: () => void;
+  /** Launch the chat with a pre-baked simulated conversation (e.g. "Generate angles" task). */
+  onStartSimulatedChat?: (message: string, taskTitle?: string) => void;
 }
 
 interface Task {
   id: string;
   description: string;
-  /** When true, suppresses the hover-revealed "Start task" CTA — used for the daily
-   *  check-in row, which has its own answer flow rather than a startable task. */
-  hideStartButton?: boolean;
+  /** When true, hover shows "Check-in" instead of "Start task" (daily check-in flow). */
+  checkIn?: boolean;
+  /** When true, hover shows "Mark as done" (matches Figma `Product_button` node 3169:25118). */
+  markAsDone?: boolean;
+  /** When true, hover shows sparkle + "Generate angles" (Figma `Product_button` node 3189:26409). */
+  generateAngles?: boolean;
+  /** Set after a successful check-in submit. Strikethrough text + hover shows "Edit". */
+  done?: boolean;
+  /** Last submitted check-in value, prefilled when re-opening the modal via Edit. */
+  checkInValue?: string;
 }
 
 interface OverdueTask extends Task {
@@ -41,20 +54,22 @@ const OVERDUE_TASKS: OverdueTask[] = [
   },
 ];
 
-const TODAY_TASKS: Task[] = [
+const INITIAL_TODAY_TASKS: Task[] = [
   {
     id: 'today-1',
     description: "Daily check-in - What is your today\u2019s revenue?",
-    hideStartButton: true,
+    checkIn: true,
   },
   {
     id: 'today-2',
     description: 'Refresh your ads before they stop converting',
+    generateAngles: true,
   },
   {
     id: 'today-3',
     description:
       'Launch first batch of 4-6 new ad creatives in one ad set per platform with broad targeting',
+    markAsDone: true,
   },
 ];
 
@@ -83,10 +98,231 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
+/** Hover-only "Undone" — shown when a `markAsDone` row is completed (click row again to revert). */
+function UndoMarkDoneButton() {
+  return (
+    <div
+      className="home-task-card__label flex flex-col items-center justify-center shrink-0 overflow-hidden"
+      style={{
+        paddingLeft: '12px',
+        paddingRight: '12px',
+        paddingTop: '4px',
+        paddingBottom: '4px',
+        borderRadius: '8px',
+        border: '1px solid var(--alpha-light-100)',
+        background:
+          'linear-gradient(180deg, var(--color-neutral-50) 0%, #f5f5f5 100%)',
+      }}
+      aria-hidden
+    >
+      <span
+        className="font-medium whitespace-nowrap"
+        style={{
+          fontFamily: 'var(--font-primary)',
+          fontSize: 'var(--body-3-size)',
+          lineHeight: 'var(--body-3-line)',
+          letterSpacing: 'var(--body-3-spacing)',
+          color: 'var(--alpha-light-600)',
+          textAlign: 'center',
+        }}
+      >
+        Undone
+      </span>
+    </div>
+  );
+}
+
+/**
+ * Hover-only "Edit" CTA pill — shown on completed check-in rows (label-only variant).
+ * Same hover-fade pattern as `StartTaskButton`/`CheckInTaskButton` via `.home-task-card__label`.
+ */
+function EditTaskButton() {
+  return (
+    <div
+      className="home-task-card__label flex flex-col items-center justify-center shrink-0 overflow-hidden"
+      style={{
+        paddingLeft: '12px',
+        paddingRight: '12px',
+        paddingTop: '4px',
+        paddingBottom: '4px',
+        borderRadius: '8px',
+        border: '1px solid var(--alpha-light-100)',
+        background:
+          'linear-gradient(180deg, var(--color-neutral-50) 0%, #f5f5f5 100%)',
+      }}
+      aria-hidden
+    >
+      <span
+        className="font-medium whitespace-nowrap"
+        style={{
+          fontFamily: 'var(--font-primary)',
+          fontSize: 'var(--body-3-size)',
+          lineHeight: 'var(--body-3-line)',
+          letterSpacing: 'var(--body-3-spacing)',
+          color: 'var(--alpha-light-600)',
+          textAlign: 'center',
+        }}
+      >
+        Edit
+      </span>
+    </div>
+  );
+}
+
+/**
+ * Hover-only "Check-in" CTA — same shell as `StartTaskButton`; fades in via `.home-task-card__label`.
+ */
+function CheckInTaskButton() {
+  return (
+    <div
+      className="home-task-card__label flex flex-col items-center justify-center shrink-0 overflow-hidden"
+      style={{
+        paddingLeft: '8px',
+        paddingRight: '8px',
+        paddingTop: '4px',
+        paddingBottom: '4px',
+        borderRadius: '8px',
+        border: '1px solid var(--alpha-light-100)',
+        background:
+          'linear-gradient(180deg, var(--color-neutral-50) 0%, #f5f5f5 100%)',
+      }}
+      aria-hidden
+    >
+      <span className="flex items-center">
+        <span
+          className="flex items-center justify-center shrink-0 overflow-hidden relative"
+          style={{ width: '20px', height: '20px' }}
+        >
+          <CalendarIcon color="var(--alpha-light-600)" />
+        </span>
+        <span
+          className="flex items-center justify-center"
+          style={{ paddingLeft: '4px', paddingRight: '4px' }}
+        >
+          <span
+            className="font-medium whitespace-nowrap"
+            style={{
+              fontFamily: 'var(--font-primary)',
+              fontSize: 'var(--body-3-size)',
+              lineHeight: 'var(--body-3-line)',
+              letterSpacing: 'var(--body-3-spacing)',
+              color: 'var(--alpha-light-600)',
+              textAlign: 'center',
+            }}
+          >
+            Check-in
+          </span>
+        </span>
+      </span>
+    </div>
+  );
+}
+
+/**
+ * Hover-only "Mark as done" CTA pill — matches Figma `Product_button` variant
+ * (node 3169:25118): check-circle icon + "Mark as done" label, same shell as
+ * `StartTaskButton`/`CheckInTaskButton` so it slots into `.home-task-card__label`.
+ */
+function MarkAsDoneButton() {
+  return (
+    <div
+      className="home-task-card__label flex flex-col items-center justify-center shrink-0 overflow-hidden"
+      style={{
+        paddingLeft: '8px',
+        paddingRight: '8px',
+        paddingTop: '4px',
+        paddingBottom: '4px',
+        borderRadius: '8px',
+        border: '1px solid var(--alpha-light-100)',
+        background:
+          'linear-gradient(180deg, var(--color-neutral-50) 0%, #f5f5f5 100%)',
+      }}
+      aria-hidden
+    >
+      <span className="flex items-center">
+        <span
+          className="flex items-center justify-center shrink-0 overflow-hidden relative"
+          style={{ width: '20px', height: '20px' }}
+        >
+          <CheckCircleIcon color="var(--alpha-light-600)" />
+        </span>
+        <span
+          className="flex items-center justify-center"
+          style={{ paddingLeft: '4px', paddingRight: '4px' }}
+        >
+          <span
+            className="font-medium whitespace-nowrap"
+            style={{
+              fontFamily: 'var(--font-primary)',
+              fontSize: 'var(--body-3-size)',
+              lineHeight: 'var(--body-3-line)',
+              letterSpacing: 'var(--body-3-spacing)',
+              color: 'var(--alpha-light-600)',
+              textAlign: 'center',
+            }}
+          >
+            Mark as done
+          </span>
+        </span>
+      </span>
+    </div>
+  );
+}
+
+/**
+ * Hover-only "Generate angles" CTA — matches Figma `Product_button` (node 3189:26409):
+ * sparkle icon + label, same shell as `StartTaskButton`.
+ */
+function GenerateAnglesButton() {
+  return (
+    <div
+      className="home-task-card__label flex flex-col items-center justify-center shrink-0 overflow-hidden"
+      style={{
+        paddingLeft: '8px',
+        paddingRight: '8px',
+        paddingTop: '4px',
+        paddingBottom: '4px',
+        borderRadius: '8px',
+        border: '1px solid var(--alpha-light-100)',
+        background:
+          'linear-gradient(180deg, var(--color-neutral-50) 0%, #f5f5f5 100%)',
+      }}
+      aria-hidden
+    >
+      <span className="flex items-center">
+        <span
+          className="flex items-center justify-center shrink-0 overflow-hidden relative"
+          style={{ width: '20px', height: '20px' }}
+        >
+          <SparkleNavIcon color="var(--alpha-light-600)" />
+        </span>
+        <span
+          className="flex items-center justify-center"
+          style={{ paddingLeft: '4px', paddingRight: '4px' }}
+        >
+          <span
+            className="font-medium whitespace-nowrap"
+            style={{
+              fontFamily: 'var(--font-primary)',
+              fontSize: 'var(--body-3-size)',
+              lineHeight: 'var(--body-3-line)',
+              letterSpacing: 'var(--body-3-spacing)',
+              color: 'var(--alpha-light-600)',
+              textAlign: 'center',
+            }}
+          >
+            Generate angles
+          </span>
+        </span>
+      </span>
+    </div>
+  );
+}
+
 /**
  * Hover-only "Start task" CTA pill — matches Figma node 3169:25118 (`Product_button`
  * variant with combo box: 20×20 icon slot + label container). Always rendered to
- * reserve the 32px right-side slot and prevent layout shift, then fades in on row
+ * reserve the right-side slot and prevent layout shift, then fades in on row
  * hover/focus via the `.home-task-card__label` opacity transition.
  */
 function StartTaskButton() {
@@ -136,7 +372,15 @@ function StartTaskButton() {
   );
 }
 
-function OverdueTaskCard({ task, animationDelay }: { task: OverdueTask; animationDelay: number }) {
+function OverdueTaskCard({
+  task,
+  animationDelay,
+  onClick,
+}: {
+  task: OverdueTask;
+  animationDelay: number;
+  onClick?: () => void;
+}) {
   return (
     <div
       className="chat-card-enter w-full"
@@ -144,7 +388,8 @@ function OverdueTaskCard({ task, animationDelay }: { task: OverdueTask; animatio
     >
       <button
         type="button"
-        className="home-task-card home-task-card--overdue w-full text-left cursor-pointer"
+        onClick={onClick}
+        className={`home-task-card home-task-card--overdue w-full text-left cursor-pointer${task.done ? ' home-task-card--done' : ''}`}
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -200,19 +445,46 @@ function OverdueTaskCard({ task, animationDelay }: { task: OverdueTask; animatio
               fontSize: 'var(--body-3-size)',
               lineHeight: 'var(--body-3-line)',
               letterSpacing: 'var(--body-3-spacing)',
+              textDecoration: task.done ? 'line-through' : undefined,
             }}
           >
             {task.description}
           </p>
         </div>
 
-        {!task.hideStartButton && <StartTaskButton />}
+        <div className="home-task-card__cta-slot">
+          {task.done ? (
+            task.checkIn ? (
+              <EditTaskButton />
+            ) : task.markAsDone ? (
+              <UndoMarkDoneButton />
+            ) : (
+              <EditTaskButton />
+            )
+          ) : task.checkIn ? (
+            <CheckInTaskButton />
+          ) : task.markAsDone ? (
+            <MarkAsDoneButton />
+          ) : task.generateAngles ? (
+            <GenerateAnglesButton />
+          ) : (
+            <StartTaskButton />
+          )}
+        </div>
       </button>
     </div>
   );
 }
 
-function TodayTaskCard({ task, animationDelay }: { task: Task; animationDelay: number }) {
+function TodayTaskCard({
+  task,
+  animationDelay,
+  onClick,
+}: {
+  task: Task;
+  animationDelay: number;
+  onClick?: () => void;
+}) {
   return (
     <div
       className="chat-card-enter w-full"
@@ -220,7 +492,8 @@ function TodayTaskCard({ task, animationDelay }: { task: Task; animationDelay: n
     >
       <button
         type="button"
-        className="home-task-card w-full text-left cursor-pointer"
+        onClick={onClick}
+        className={`home-task-card w-full text-left cursor-pointer${task.done ? ' home-task-card--done' : ''}`}
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -239,12 +512,31 @@ function TodayTaskCard({ task, animationDelay }: { task: Task; animationDelay: n
             fontSize: 'var(--body-3-size)',
             lineHeight: 'var(--body-3-line)',
             letterSpacing: 'var(--body-3-spacing)',
+            textDecoration: task.done ? 'line-through' : undefined,
           }}
         >
           {task.description}
         </p>
 
-        {!task.hideStartButton && <StartTaskButton />}
+        <div className="home-task-card__cta-slot">
+          {task.done ? (
+            task.checkIn ? (
+              <EditTaskButton />
+            ) : task.markAsDone ? (
+              <UndoMarkDoneButton />
+            ) : (
+              <EditTaskButton />
+            )
+          ) : task.checkIn ? (
+            <CheckInTaskButton />
+          ) : task.markAsDone ? (
+            <MarkAsDoneButton />
+          ) : task.generateAngles ? (
+            <GenerateAnglesButton />
+          ) : (
+            <StartTaskButton />
+          )}
+        </div>
       </button>
     </div>
   );
@@ -364,12 +656,221 @@ function CollapsedChatInput({ onClick }: { onClick?: () => void }) {
   );
 }
 
+/**
+ * Daily check-in modal — matches Figma node 3078:13028.
+ * Shows on click of any `task.checkIn` row; collects today's revenue and submits.
+ * When `initialValue` is provided, the modal is in "edit" mode and prefills the input.
+ */
+function CheckInModal({
+  onClose,
+  onSubmit,
+  initialValue = '',
+}: {
+  onClose: () => void;
+  onSubmit: (revenue: string) => void;
+  initialValue?: string;
+}) {
+  const [closing, setClosing] = useState(false);
+  const [revenue, setRevenue] = useState(initialValue);
+  const [focused, setFocused] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleClose = () => setClosing(true);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit(revenue.trim());
+    setClosing(true);
+  };
+
+  useEffect(() => {
+    inputRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setClosing(true);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  return (
+    <div
+      className={`connector-modal-overlay ${closing ? 'closing' : ''}`}
+      onClick={handleClose}
+      onAnimationEnd={() => {
+        if (closing) onClose();
+      }}
+      role="presentation"
+    >
+      <form
+        className={`connector-modal ${closing ? 'closing' : ''}`}
+        onClick={(e) => e.stopPropagation()}
+        onSubmit={handleSubmit}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="checkin-modal-title"
+        style={{
+          width: '100%',
+          maxWidth: '480px',
+          borderRadius: '16px',
+          border: '1px solid var(--border-default)',
+          background: 'var(--surface-elevated)',
+          backdropFilter: 'blur(10px)',
+          boxShadow:
+            '0px 3px 6px 0px rgba(0,0,0,0.04), 0px 11px 11px 0px rgba(0,0,0,0.03), 0px 24px 15px 0px rgba(0,0,0,0.02), 0px 43px 17px 0px rgba(0,0,0,0.01), 0px 67px 19px 0px rgba(0,0,0,0)',
+          position: 'relative',
+          padding: '24px',
+        }}
+      >
+        {/* Title */}
+        <h2
+          id="checkin-modal-title"
+          style={{
+            fontFamily: 'var(--font-primary)',
+            fontSize: 'var(--heading-h6-size)',
+            lineHeight: 'var(--heading-h6-line)',
+            letterSpacing: 'var(--heading-h1-spacing)',
+            fontWeight: 600,
+            color: 'var(--alpha-light-900)',
+            margin: 0,
+          }}
+        >
+          Daily check-in
+        </h2>
+
+        {/* Close button */}
+        <button
+          type="button"
+          onClick={handleClose}
+          aria-label="Close"
+          style={{
+            position: 'absolute',
+            top: '16px',
+            right: '16px',
+            width: '28px',
+            height: '28px',
+            borderRadius: '999px',
+            background: 'var(--close-btn-bg)',
+            border: 'none',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 0,
+          }}
+        >
+          <XMarkIcon className="w-5 h-5" color="var(--alpha-light-600)" />
+        </button>
+
+        {/* Form field */}
+        <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '11px' }}>
+          <label
+            htmlFor="checkin-revenue-input"
+            style={{
+              fontFamily: 'var(--font-primary)',
+              fontSize: 'var(--body-3-size)',
+              lineHeight: 'var(--body-3-line)',
+              letterSpacing: 'var(--body-3-spacing)',
+              fontWeight: 500,
+              color: 'var(--alpha-light-900)',
+            }}
+          >
+            What is your today&rsquo;s revenue?
+          </label>
+
+          <input
+            ref={inputRef}
+            id="checkin-revenue-input"
+            type="text"
+            inputMode="decimal"
+            value={revenue}
+            onChange={(e) => setRevenue(e.target.value)}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
+            placeholder="Add revenue here"
+            autoComplete="off"
+            style={{
+              width: '100%',
+              height: '36px',
+              padding: '8px 12px',
+              borderRadius: '8px',
+              border: `1px solid ${focused ? 'var(--alpha-light-300)' : 'var(--alpha-light-100)'}`,
+              background: 'var(--color-white)',
+              fontFamily: 'var(--font-primary)',
+              fontSize: 'var(--body-3-size)',
+              lineHeight: 'var(--body-3-line)',
+              letterSpacing: 'var(--body-3-spacing)',
+              color: 'var(--alpha-light-900)',
+              outline: 'none',
+              transition: 'border-color 150ms ease, box-shadow 150ms ease',
+              boxShadow: focused ? '0 0 0 3px rgba(26,26,26,0.06)' : 'none',
+            }}
+          />
+        </div>
+
+        {/* Submit */}
+        <button
+          type="submit"
+          className="connector-modal-btn"
+          style={{ marginTop: '16px', height: '36px', padding: '8px 20px' }}
+        >
+          <span
+            style={{
+              fontFamily: 'var(--font-primary)',
+              fontSize: 'var(--body-3-size)',
+              lineHeight: 'var(--body-3-line)',
+              letterSpacing: 'var(--body-3-spacing)',
+              fontWeight: 500,
+              color: 'var(--color-white)',
+            }}
+          >
+            Submit
+          </span>
+        </button>
+      </form>
+    </div>
+  );
+}
+
 export default function HomePage({
   userName = 'Marcos',
   onCollapsedInputClick,
   onSeeAllTasks,
+  onStartSimulatedChat,
 }: HomePageProps) {
   const greeting = useMemo(() => getTimeOfDayGreeting(), []);
+  const [todayTasks, setTodayTasks] = useState<Task[]>(INITIAL_TODAY_TASKS);
+  const [checkInTaskId, setCheckInTaskId] = useState<string | null>(null);
+
+  const checkInTask = checkInTaskId
+    ? todayTasks.find((t) => t.id === checkInTaskId) ?? null
+    : null;
+
+  const handleTaskClick = (task: Task) => {
+    if (task.checkIn) {
+      setCheckInTaskId(task.id);
+      return;
+    }
+    if (task.markAsDone) {
+      setTodayTasks((prev) =>
+        prev.map((t) => (t.id === task.id ? { ...t, done: !t.done } : t)),
+      );
+      return;
+    }
+    if (task.generateAngles) {
+      onStartSimulatedChat?.(GENERATE_ANGLES_PROMPT, task.description);
+    }
+  };
+
+  const handleCheckInSubmit = (revenue: string) => {
+    if (!checkInTaskId) return;
+    setTodayTasks((prev) =>
+      prev.map((t) =>
+        t.id === checkInTaskId ? { ...t, done: true, checkInValue: revenue } : t,
+      ),
+    );
+  };
+
+  const remainingCount = todayTasks.filter((t) => !t.done).length;
 
   return (
     <div className="flex flex-col flex-1 min-h-0 min-w-0 relative h-full">
@@ -465,7 +966,7 @@ export default function HomePage({
                   margin: 0,
                 }}
               >
-                You have {TODAY_TASKS.length} tasks to be done today and {OVERDUE_TASKS.length === 1 ? '1 overdue' : `${OVERDUE_TASKS.length} overdue`}.
+                You have {remainingCount} {remainingCount === 1 ? 'task' : 'tasks'} to be done today and {OVERDUE_TASKS.length === 1 ? '1 overdue' : `${OVERDUE_TASKS.length} overdue`}.
               </p>
             </div>
 
@@ -482,6 +983,7 @@ export default function HomePage({
                       key={task.id}
                       task={task}
                       animationDelay={120 + i * 60}
+                      onClick={() => handleTaskClick(task)}
                     />
                   ))}
                 </div>
@@ -519,11 +1021,12 @@ export default function HomePage({
                 )}
               </div>
               <div className="flex flex-col w-full" style={{ gap: '6px' }}>
-                {TODAY_TASKS.map((task, i) => (
+                {todayTasks.map((task, i) => (
                   <TodayTaskCard
                     key={task.id}
                     task={task}
                     animationDelay={200 + i * 60}
+                    onClick={() => handleTaskClick(task)}
                   />
                 ))}
               </div>
@@ -547,6 +1050,14 @@ export default function HomePage({
           <CollapsedChatInput onClick={onCollapsedInputClick} />
         </div>
       </div>
+
+      {checkInTask && (
+        <CheckInModal
+          initialValue={checkInTask.checkInValue ?? ''}
+          onClose={() => setCheckInTaskId(null)}
+          onSubmit={handleCheckInSubmit}
+        />
+      )}
     </div>
   );
 }

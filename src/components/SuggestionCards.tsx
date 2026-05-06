@@ -5,7 +5,30 @@ const suggestions = [
   "Score this sales call transcript and give me a detailed breakdown",
 ];
 
+/**
+ * Triggered from Home → "Refresh your ads…" task → "Generate angles" CTA.
+ * Mirrors the chat simulation in Figma `Whitelabel-App` section 3189:26418
+ * (Generate angles task execution flow).
+ */
+export const GENERATE_ANGLES_PROMPT =
+  "I feel like these ads were running so well. What did happen?";
+
+/** Chip reply after the first Generate-angles assistant message — no thinking steps. */
+export const ANALYZE_AD_ACCOUNT_PROMPT =
+  'Yes, please analyze my ad account and suggest new angles';
+
+/** Chip reply after the second Generate-angles assistant message — renders the two rich widgets. */
+export const YES_GENERATE_ANGLES_PROMPT = 'Yes, generate new ad angles';
+
 export const simulatedResponses: Record<string, string> = {
+  [GENERATE_ANGLES_PROMPT]:
+    `Hey, first off, two months of solid performance is actually a great sign, because it means your offer and your messaging clearly resonated with people. What's most likely happening is your audience is getting fatigued. The fix here is simple. You need fresh creatives. New hooks, new angles, maybe even a new format entirely.\n\nWould you like me to dig into what's happening with your account before we brainstorm new angles?\n\n- Yes, please analyze my ad account and suggest new angles\n- Not right now`,
+
+  [ANALYZE_AD_ACCOUNT_PROMPT]:
+    `So as Meta has become more competitive, the lifecycle of a successful ad has drastically shortened. It used to be a winning ad could last 6 to 12 months. Now the timeline is closer to 1 to 3 months, if that.\n\nSo having new creatives to rotate in to replace the older ones is very important. Do you want me to help you come up with some new angles based on what's worked best in your ad account recently?\n\n- Yes, generate new ad angles\n- Not right now`,
+
+  [YES_GENERATE_ANGLES_PROMPT]: `Here's what I found in your account and four fresh angles based on your top-performing creatives.\n\n[ADCAMPAIGN]\nMETRICS|$1,284|Spend|84.2k|Impressions|3.2%|CTR|4.1x|ROAS\nROW|Sandra testimonials|$27.30|48|$1,310|winner\nROW|Ethan feedback|$22.15|44|$974|winner\nROW|Isabella comments|$15.60|28|$437|flat\nROW|Liam insights|$29.75|52|$1,547|fatigued\n[/ADCAMPAIGN]\n[ANGLES]\nCONCEPT|Ad concept 1|Sandra testimonial\nHOOK|"I went from 2 clients to 11 in 60 days, and I stopped posting every day to do it."\nBODY|Most coaches think more content = more clients. Sandra proved the opposite. She cut her posting to twice a week, doubled down on one offer, and her calendar filled in 8 weeks.\nCTA|Comment "SANDRA" and I'll send you the exact framework she used.\nCONCEPT|Ad concept 2|Ethan feedback\nHOOK|After 44 leads in 30 days, here's the one thing Ethan did differently.\nBODY|Ethan was posting daily and getting ignored. He switched to one high-value post per week — a real client win — and his CPL dropped to $22. Consistency beats volume.\nCTA|Drop "ETHAN" in the comments and I'll send you his exact posting framework.\nCONCEPT|Ad concept 3|Isabella comments\nHOOK|28 leads from one ad — and Isabella hadn't changed her offer.\nBODY|Isabella's secret wasn't a new product. It was a comment strategy that turned cold traffic into warm conversations. $437 spend, 28 leads, zero ad fatigue.\nCTA|Type "ISABELLA" below and I'll share the exact comment framework she used.\nCONCEPT|Ad concept 4|Liam insights\nHOOK|Liam spent $1,547 and got 52 leads. Then his ad fatigued. Here's why.\nBODY|High volume is not the same as sustainability. Liam's creative resonated fast — too fast. The audience burned through it in 6 weeks. Fresh angles and a rotation schedule would have extended that by months.\nCTA|Comment "LIAM" and I'll walk you through a creative rotation plan built for your account.\n[/ANGLES]`,
+
   [suggestions[0]]:
     `This is one of the most important distinctions you can learn — once you can tell them apart, you'll stop reacting on autopilot and start making conscious choices.\n\nHere's a side-by-side breakdown:\n\n| Cue | Physical Hunger | Emotional Hunger |\n| --- | --- | --- |\n| Onset | Gradual — builds slowly over hours | Sudden — hits all at once |\n| Location | Stomach — growling, emptiness, low energy | Head & chest — tension, tightness, restlessness |\n| What you crave | Open to many foods, including "boring" ones | Specific comfort foods — usually salty, sweet, or crunchy |\n| Satisfaction | You feel satisfied and can stop when full | You keep eating past fullness, chasing a feeling |\n| Emotional state before | Neutral — just physically depleted | Stressed, bored, lonely, anxious, or sad |\n| Emotional state after | Content, energized | Guilt, shame, or numbness |\n| Timing | Follows a pattern — hours since last meal | No pattern — can hit right after eating |\n\nA helpful test: pause and ask yourself, "Would I eat an apple right now?" If the answer is yes, it's likely physical hunger. If you want only chips or chocolate, it's probably emotional.\n\nThe goal isn't to eliminate emotional eating entirely — it's to notice which type of hunger is driving you before you respond. That pause is where your power is.`,
 

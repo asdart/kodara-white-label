@@ -421,6 +421,75 @@ input, button, select, textarea, [contenteditable] {
   animation: audio-player-out 200ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+/* ── Chat input shell ─────────────────────────────────────────────────────
+   Outer container that may stack a TaskDetailsBar above ChatInput as a
+   single unified card. The shell owns nothing visually on its own — the
+   inner ChatInput keeps its border / bg / shadow. When the task bar is
+   present, the shell adds an `.has-task-bar` modifier that flattens the
+   chat-input's top corners + top border and rounds the bar's top corners,
+   so the two pieces look like one merged card with a hairline separator. */
+.chat-input-shell {
+  width: 100%;
+  max-width: 704px;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-input-shell.has-task-bar > .chat-input {
+  border-top-left-radius: 0 !important;
+  border-top-right-radius: 0 !important;
+  border-top: none;
+}
+
+/* ── Task details bar slide-up / slide-down ──────────────────────────────
+   Wrapper handles the layout collapse (max-height) so the chat input
+   springs back into place after dismissal. Inner bar handles the slide +
+   fade. Bar shares background + side borders with the chat input below
+   and adds a 1px bottom border as the divider. */
+.task-details-bar-wrapper {
+  width: 100%;
+  display: block;
+  overflow: hidden;
+  background: var(--surface-primary);
+  border-left: 1px solid var(--alpha-light-100);
+  border-right: 1px solid var(--alpha-light-100);
+  border-top: 1px solid var(--alpha-light-100);
+  border-top-left-radius: 24px;
+  border-top-right-radius: 24px;
+  transition:
+    max-height 400ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 250ms ease;
+}
+
+.task-details-bar-wrapper.is-hidden {
+  max-height: 0;
+  border-color: transparent;
+  pointer-events: none;
+}
+
+.task-details-bar-wrapper.is-visible {
+  max-height: 80px;
+}
+
+.task-details-bar {
+  border-bottom: 1px solid var(--alpha-light-100);
+  transform-origin: bottom center;
+  will-change: transform, opacity;
+  transition:
+    opacity 320ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 400ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.task-details-bar.is-hidden {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.task-details-bar.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 /* Audio player volume slider */
 .audio-volume-slider {
   -webkit-appearance: none;
@@ -786,8 +855,9 @@ input, button, select, textarea, [contenteditable] {
 
 /* ── Home page task card — hover/focus state matches Figma node 3151:13207 ── */
 .home-task-card {
+  --home-task-card-border-rest: rgba(26, 26, 26, 0.09);
   --home-task-card-bg: var(--alpha-dark-900);
-  --home-task-card-border: var(--alpha-light-100);
+  --home-task-card-border: var(--home-task-card-border-rest);
   --home-task-card-text: var(--alpha-light-600);
   background: var(--home-task-card-bg);
   border: 1px solid var(--home-task-card-border);
@@ -811,6 +881,15 @@ input, button, select, textarea, [contenteditable] {
   transition: opacity 150ms ease;
 }
 
+/* Right-side hover CTA column — fixed width so swapping pills (e.g. icon + "Mark as done"
+ * → narrower "Undone") never changes how the title wraps. */
+.home-task-card__cta-slot {
+  flex: 0 0 228px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
 .home-task-card:hover,
 .home-task-card:focus-visible {
   --home-task-card-bg: var(--color-neutral-50);
@@ -827,6 +906,28 @@ input, button, select, textarea, [contenteditable] {
 .home-task-card:hover .home-task-card__label,
 .home-task-card:focus-visible .home-task-card__label {
   opacity: 1;
+}
+
+/* Completed (e.g. submitted check-in) — title uses alpha-400; hover keeps border
+ * and title color unchanged from default (background still lifts like other rows). */
+.home-task-card.home-task-card--done {
+  --home-task-card-text: var(--alpha-light-400);
+}
+
+.home-task-card.home-task-card--done:hover,
+.home-task-card.home-task-card--done:focus-visible {
+  --home-task-card-border: var(--home-task-card-border-rest);
+  --home-task-card-text: var(--alpha-light-400);
+  outline: none;
+}
+
+[data-theme="dark"] .home-task-card {
+  --home-task-card-border-rest: rgba(255, 255, 255, 0.04);
+}
+
+.home-task-card.home-task-card--done.home-task-card--overdue:hover,
+.home-task-card.home-task-card--done.home-task-card--overdue:focus-visible {
+  --home-task-card-border: var(--color-red-100);
 }
 
 /* ── Chat bubble entrance ── */
@@ -1223,6 +1324,12 @@ input, button, select, textarea, [contenteditable] {
 }
 
 /* ── Scorecard ── */
-.scorecard-row-hover:hover {
-  background: var(--alpha-light-25);
+.scorecard-row-hover {
+  border-radius: 20px;
+  transition: background 150ms ease;
 }
+
+.scorecard-row-hover:hover {
+  background: rgba(26, 26, 26, 0.04);
+}
+

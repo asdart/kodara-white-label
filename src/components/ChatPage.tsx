@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import ChatInput from './ChatInput';
+import TaskDetailsBar from './TaskDetailsBar';
 import { PenSparkleIcon, SuggestionArrowIcon, CopyIcon, ThumbsUpIcon, ThumbsDownIcon, VoiceIcon, FeedbackChatIcon, MicIcon, PauseIcon, PlayIcon, ArrowDownIcon } from './Icons';
 import { streamChat, type ChatMessage as APIChatMessage } from '../services/openai';
 import type { ThinkingStepsConfig } from './SuggestionCards';
+import { simulatedResponses, simulatedThinkingSteps } from './SuggestionCards';
 
 /* ── Types ── */
 interface Message {
@@ -17,6 +19,10 @@ interface ChatPageProps {
   simulatedResponse?: string;
   simulatedSteps?: ThinkingStepsConfig;
   simulatedImage?: string;
+  /** Title shown in the task details bar above the input. When provided,
+   *  the bar slides up once the AI begins generating output and stays
+   *  visible until the user clicks "Mark as done". */
+  taskTitle?: string;
   onNewTask?: () => void;
 }
 
@@ -86,11 +92,34 @@ interface ScorecardData {
   closed: boolean;
 }
 
+interface AdMetric {
+  value: string;
+  label: string;
+}
+
+interface AdRow {
+  name: string;
+  cpl: string;
+  leads: string;
+  spend: string;
+  status: string;
+}
+
+interface AdAngleConcept {
+  name: string;
+  source: string;
+  hook: string;
+  body: string;
+  cta: string;
+}
+
 type ContentBlock =
   | { type: 'text'; value: string }
   | { type: 'table'; headers: string[]; rows: string[][] }
   | { type: 'roadmap'; stages: RoadmapStage[]; closed: boolean }
-  | { type: 'scorecard'; data: ScorecardData };
+  | { type: 'scorecard'; data: ScorecardData }
+  | { type: 'adcampaign'; metrics: AdMetric[]; rows: AdRow[]; closed: boolean }
+  | { type: 'angles'; concepts: AdAngleConcept[]; closed: boolean };
 
 function parseContentBlocks(text: string): ContentBlock[] {
   const lines = text.split('\n');
@@ -162,6 +191,57 @@ function parseContentBlocks(text: string): ContentBlock[] {
       const closed = i < lines.length && lines[i].trim() === '[/ROADMAP]';
       if (closed) i++;
       blocks.push({ type: 'roadmap', stages, closed });
+    } else if (line.trim() === '[ADCAMPAIGN]') {
+      flushText();
+      i++;
+      const adMetrics: AdMetric[] = [];
+      const adRows: AdRow[] = [];
+      while (i < lines.length && lines[i].trim() !== '[/ADCAMPAIGN]') {
+        const parts = lines[i].split('|').map((s) => s.trim());
+        if (parts[0] === 'METRICS') {
+          for (let m = 1; m + 1 < parts.length; m += 2) {
+            adMetrics.push({ value: parts[m], label: parts[m + 1] });
+          }
+        } else if (parts[0] === 'ROW') {
+          adRows.push({
+            name: parts[1] || '',
+            cpl: parts[2] || '',
+            leads: parts[3] || '',
+            spend: parts[4] || '',
+            status: parts[5] || 'flat',
+          });
+        }
+        i++;
+      }
+      const adClosed = i < lines.length && lines[i].trim() === '[/ADCAMPAIGN]';
+      if (adClosed) i++;
+      blocks.push({ type: 'adcampaign', metrics: adMetrics, rows: adRows, closed: adClosed });
+    } else if (line.trim() === '[ANGLES]') {
+      flushText();
+      i++;
+      const angleConcepts: AdAngleConcept[] = [];
+      let currentConcept: Partial<AdAngleConcept> | null = null;
+      while (i < lines.length && lines[i].trim() !== '[/ANGLES]') {
+        const firstPipe = lines[i].indexOf('|');
+        const fieldType = firstPipe === -1 ? lines[i].trim() : lines[i].slice(0, firstPipe).trim();
+        const fieldRest = firstPipe === -1 ? '' : lines[i].slice(firstPipe + 1).trim();
+        if (fieldType === 'CONCEPT') {
+          if (currentConcept?.name) angleConcepts.push(currentConcept as AdAngleConcept);
+          const parts = lines[i].split('|').map((s) => s.trim());
+          currentConcept = { name: parts[1] || '', source: parts[2] || '', hook: '', body: '', cta: '' };
+        } else if (fieldType === 'HOOK' && currentConcept) {
+          currentConcept.hook = fieldRest;
+        } else if (fieldType === 'BODY' && currentConcept) {
+          currentConcept.body = fieldRest;
+        } else if (fieldType === 'CTA' && currentConcept) {
+          currentConcept.cta = fieldRest;
+        }
+        i++;
+      }
+      if (currentConcept?.name) angleConcepts.push(currentConcept as AdAngleConcept);
+      const anglesClosed = i < lines.length && lines[i].trim() === '[/ANGLES]';
+      if (anglesClosed) i++;
+      blocks.push({ type: 'angles', concepts: angleConcepts, closed: anglesClosed });
     } else if (
       line.trim().startsWith('|') &&
       line.trim().endsWith('|') &&
@@ -424,6 +504,316 @@ function CircleGauge({ score, size = 80 }: { score: number; size?: number }) {
   );
 }
 
+/* ── Ad Campaign Widget ─────────────────────────────────────────────────── */
+
+const STATUS_CONFIG: Record<string, { color: string; bg: string; label: string }> = {
+  winner: { color: '#22c55e', bg: 'rgba(34,197,94,0.10)', label: 'Winner' },
+  flat: { color: 'var(--alpha-light-400)', bg: 'var(--alpha-light-50)', label: 'flat' },
+  fatigued: { color: '#ef4444', bg: 'rgba(239,68,68,0.10)', label: 'fatigued' },
+};
+
+function AdCampaignWidget({ metrics, rows }: { metrics: AdMetric[]; rows: AdRow[] }) {
+  return (
+    <div
+      style={{
+        margin: '4px 0 8px',
+        borderRadius: '16px',
+        border: '1px solid var(--alpha-light-100)',
+        background: 'var(--alpha-light-25)',
+        overflow: 'hidden',
+      }}
+    >
+      {/* Header */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '16px 16px 12px',
+          borderBottom: '1px solid var(--alpha-light-50)',
+        }}
+      >
+        <span style={{ fontFamily: 'var(--font-primary)', fontWeight: 600, fontSize: 'var(--body-3-size)', color: 'var(--alpha-light-900)' }}>
+          Your ad account analyzed
+        </span>
+        <span
+          style={{
+            fontFamily: 'var(--font-primary)',
+            fontSize: 'var(--body-4-size)',
+            color: 'var(--alpha-light-400)',
+            padding: '2px 8px',
+            borderRadius: '6px',
+            background: 'var(--alpha-light-50)',
+            border: '1px solid var(--alpha-light-100)',
+          }}
+        >
+          Last 30 days
+        </span>
+      </div>
+
+      {/* Metric tiles */}
+      {metrics.length > 0 && (
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: `repeat(${metrics.length}, 1fr)`,
+            borderBottom: '1px solid var(--alpha-light-50)',
+          }}
+        >
+          {metrics.map((m, idx) => (
+            <div
+              key={idx}
+              style={{
+                padding: '12px 8px',
+                textAlign: 'center',
+                borderRight: idx < metrics.length - 1 ? '1px solid var(--alpha-light-50)' : 'none',
+              }}
+            >
+              <div style={{ fontFamily: 'var(--font-primary)', fontWeight: 700, fontSize: '18px', lineHeight: '26px', color: 'var(--alpha-light-900)' }}>
+                {m.value}
+              </div>
+              <div style={{ fontFamily: 'var(--font-primary)', fontSize: 'var(--body-4-size)', color: 'var(--alpha-light-400)', marginTop: '2px' }}>
+                {m.label}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Table */}
+      {rows.length > 0 && (
+        <div>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr',
+              padding: '10px 16px',
+              borderBottom: '1px solid var(--alpha-light-50)',
+            }}
+          >
+            {['Ad', 'CPL', 'Leads', 'Spend', 'Status'].map((h) => (
+              <span key={h} style={{ fontFamily: 'var(--font-primary)', fontSize: 'var(--body-4-size)', fontWeight: 600, color: 'var(--alpha-light-400)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                {h}
+              </span>
+            ))}
+          </div>
+          {rows.map((row, ri) => {
+            const cfg = STATUS_CONFIG[row.status] ?? STATUS_CONFIG.flat;
+            const isLast = ri === rows.length - 1;
+            return (
+              <div
+                key={ri}
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr',
+                  padding: '10px 16px',
+                  alignItems: 'center',
+                  borderBottom: isLast ? 'none' : '1px solid var(--alpha-light-50)',
+                }}
+              >
+                <span style={{ fontFamily: 'var(--font-primary)', fontSize: 'var(--body-3-size)', fontWeight: 500, color: 'var(--alpha-light-900)' }}>
+                  {row.name}
+                </span>
+                <span style={{ fontFamily: 'var(--font-primary)', fontSize: 'var(--body-3-size)', color: 'var(--alpha-light-600)' }}>
+                  {row.cpl}
+                </span>
+                <span style={{ fontFamily: 'var(--font-primary)', fontSize: 'var(--body-3-size)', color: 'var(--alpha-light-600)' }}>
+                  {row.leads}
+                </span>
+                <span style={{ fontFamily: 'var(--font-primary)', fontSize: 'var(--body-3-size)', color: 'var(--alpha-light-600)' }}>
+                  {row.spend}
+                </span>
+                <span
+                  style={{
+                    display: 'inline-block',
+                    fontFamily: 'var(--font-primary)',
+                    fontSize: 'var(--body-4-size)',
+                    fontWeight: 600,
+                    color: cfg.color,
+                    background: cfg.bg,
+                    padding: '2px 8px',
+                    borderRadius: '6px',
+                    width: 'fit-content',
+                  }}
+                >
+                  {cfg.label}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Ad Angles Widget ───────────────────────────────────────────────────── */
+
+function AnglesWidget({ concepts }: { concepts: AdAngleConcept[] }) {
+  const [activeTab, setActiveTab] = useState(0);
+  const [copied, setCopied] = useState(false);
+  const active = concepts[Math.min(activeTab, concepts.length - 1)];
+
+  const handleCopy = () => {
+    if (!active) return;
+    const text = [
+      `Hook: ${active.hook}`,
+      `\nBody: ${active.body}`,
+      `\nCTA: ${active.cta}`,
+    ].join('\n');
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  };
+
+  return (
+    <div
+      style={{
+        margin: '4px 0 8px',
+        borderRadius: '16px',
+        border: '1px solid var(--alpha-light-100)',
+        background: 'var(--alpha-light-25)',
+        overflow: 'hidden',
+      }}
+    >
+      {/* Header */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '16px 16px 12px',
+          borderBottom: '1px solid var(--alpha-light-50)',
+        }}
+      >
+        <span style={{ fontFamily: 'var(--font-primary)', fontWeight: 600, fontSize: 'var(--body-3-size)', color: 'var(--alpha-light-900)' }}>
+          Suggested ad new angles
+        </span>
+        <button
+          onClick={handleCopy}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: 0,
+            fontFamily: 'var(--font-primary)',
+            fontSize: 'var(--body-4-size)',
+            color: copied ? '#22c55e' : 'var(--alpha-light-600)',
+            transition: 'color 150ms ease',
+          }}
+        >
+          <CopyIcon color={copied ? '#22c55e' : 'var(--alpha-light-600)'} />
+          {copied ? 'Copied!' : 'Copy angle'}
+        </button>
+      </div>
+
+      {/* Tabs */}
+      {concepts.length > 1 && (
+        <div
+          style={{
+            display: 'flex',
+            gap: '2px',
+            padding: '8px 12px 0',
+            borderBottom: '1px solid var(--alpha-light-50)',
+          }}
+        >
+          {concepts.map((c, idx) => (
+            <button
+              key={idx}
+              onClick={() => setActiveTab(idx)}
+              style={{
+                fontFamily: 'var(--font-primary)',
+                fontSize: 'var(--body-3-size)',
+                fontWeight: activeTab === idx ? 600 : 400,
+                color: activeTab === idx ? 'var(--alpha-light-900)' : 'var(--alpha-light-400)',
+                background: activeTab === idx ? 'var(--color-neutral-0, #fff)' : 'transparent',
+                border: activeTab === idx ? '1px solid var(--alpha-light-100)' : '1px solid transparent',
+                borderBottom: activeTab === idx ? '1px solid var(--color-neutral-0, #fff)' : '1px solid transparent',
+                borderRadius: '8px 8px 0 0',
+                padding: '6px 14px 8px',
+                cursor: 'pointer',
+                marginBottom: '-1px',
+                transition: 'color 150ms ease, background 150ms ease',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {c.name}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Concept content */}
+      {active && (
+        <div style={{ padding: '16px' }}>
+          {/* Concept title + source badge */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+            <span style={{ fontFamily: 'var(--font-primary)', fontWeight: 600, fontSize: 'var(--body-3-size)', color: 'var(--alpha-light-900)' }}>
+              {active.name}
+            </span>
+            {active.source && (
+              <span
+                style={{
+                  fontFamily: 'var(--font-primary)',
+                  fontSize: 'var(--body-4-size)',
+                  color: 'var(--alpha-light-400)',
+                  background: 'var(--alpha-light-50)',
+                  border: '1px solid var(--alpha-light-100)',
+                  borderRadius: '6px',
+                  padding: '2px 8px',
+                  flexShrink: 0,
+                }}
+              >
+                {active.source}
+              </span>
+            )}
+          </div>
+
+          {/* Hook */}
+          {active.hook && (
+            <div style={{ marginBottom: '14px' }}>
+              <div style={{ fontFamily: 'var(--font-primary)', fontSize: 'var(--body-4-size)', fontWeight: 600, color: 'var(--alpha-light-400)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>
+                Hook
+              </div>
+              <p style={{ fontFamily: 'var(--font-primary)', fontSize: 'var(--body-3-size)', lineHeight: '24px', color: 'var(--alpha-light-900)', margin: 0 }}>
+                {active.hook}
+              </p>
+            </div>
+          )}
+
+          {/* Body */}
+          {active.body && (
+            <div style={{ marginBottom: '14px' }}>
+              <div style={{ fontFamily: 'var(--font-primary)', fontSize: 'var(--body-4-size)', fontWeight: 600, color: 'var(--alpha-light-400)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>
+                Body
+              </div>
+              <p style={{ fontFamily: 'var(--font-primary)', fontSize: 'var(--body-3-size)', lineHeight: '24px', color: 'var(--alpha-light-900)', margin: 0 }}>
+                {active.body}
+              </p>
+            </div>
+          )}
+
+          {/* CTA */}
+          {active.cta && (
+            <div>
+              <div style={{ fontFamily: 'var(--font-primary)', fontSize: 'var(--body-4-size)', fontWeight: 600, color: 'var(--alpha-light-400)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>
+                CTA
+              </div>
+              <p style={{ fontFamily: 'var(--font-primary)', fontSize: 'var(--body-3-size)', lineHeight: '24px', color: 'var(--alpha-light-900)', margin: 0 }}>
+                {active.cta}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ScorecardCard({ data }: { data: ScorecardData }) {
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
 
@@ -559,6 +949,24 @@ function RichContent({ content, isStreaming, totalTableRows, totalRoadmapStages 
             <div key={i}>
               {i > 0 && <div className="chat-divider" />}
               <ScorecardCard data={block.data} />
+            </div>
+          );
+        }
+
+        if (block.type === 'adcampaign') {
+          return (
+            <div key={i}>
+              {i > 0 && <div className="chat-divider" />}
+              <AdCampaignWidget metrics={block.metrics} rows={block.rows} />
+            </div>
+          );
+        }
+
+        if (block.type === 'angles') {
+          return (
+            <div key={i}>
+              {i > 0 && <div className="chat-divider" />}
+              <AnglesWidget concepts={block.concepts} />
             </div>
           );
         }
@@ -1480,7 +1888,7 @@ function countStructuredElements(text: string): { tableRows: number; roadmapStag
   return { tableRows, roadmapStages };
 }
 
-export default function ChatPage({ initialMessage, simulatedResponse, simulatedSteps, simulatedImage, onNewTask }: ChatPageProps) {
+export default function ChatPage({ initialMessage, simulatedResponse, simulatedSteps, simulatedImage, taskTitle, onNewTask }: ChatPageProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [totalTableRows, setTotalTableRows] = useState(0);
@@ -1494,6 +1902,33 @@ export default function ChatPage({ initialMessage, simulatedResponse, simulatedS
   const abortRef = useRef<AbortController | null>(null);
   const cancelledRef = useRef(false);
   const [showScrollDown, setShowScrollDown] = useState(false);
+
+  // Task details bar state. Slides in once the AI starts producing output;
+  // user dismisses it via the "Mark as done" button.
+  const [taskBarVisible, setTaskBarVisible] = useState(false);
+  const [taskBarMounted, setTaskBarMounted] = useState(false);
+  const taskBarHasShownRef = useRef(false);
+
+  // Show the bar as soon as the assistant has any visible content.
+  useEffect(() => {
+    if (!taskTitle || taskBarHasShownRef.current) return;
+    const hasAssistantOutput = messages.some(
+      (m) => m.role === 'assistant' && m.content.length > 0,
+    );
+    if (!hasAssistantOutput) return;
+    taskBarHasShownRef.current = true;
+    setTaskBarMounted(true);
+    // Defer flipping `is-visible` to the next frame so the slide-in
+    // transition runs (otherwise the element mounts already-visible).
+    requestAnimationFrame(() => setTaskBarVisible(true));
+  }, [taskTitle, messages]);
+
+  const handleMarkTaskDone = useCallback(() => {
+    setTaskBarVisible(false);
+    // Unmount after the slide-down + fade transition completes (450ms is
+    // a hair longer than the longest transition in `index.css`).
+    setTimeout(() => setTaskBarMounted(false), 450);
+  }, []);
 
   // Voice / audio player state
   const [voiceContent, setVoiceContent] = useState<string | null>(null);
@@ -1632,68 +2067,24 @@ export default function ChatPage({ initialMessage, simulatedResponse, simulatedS
     setTotalRoadmapStages(0);
   }, []);
 
-  const sendMessage = useCallback(async (text: string) => {
-    cancelledRef.current = false;
-    const controller = new AbortController();
-    abortRef.current = controller;
-
-    const userMessage: Message = {
-      role: 'user',
-      content: text,
-      timestamp: new Date(),
-    };
-
-    const allPrevMessages = messagesRef.current;
-    const apiMessages: APIChatMessage[] = [
-      ...allPrevMessages.map((m) => ({ role: m.role, content: m.content })),
-      { role: 'user' as const, content: text },
-    ];
-
-    const assistantMessage: Message = {
-      role: 'assistant',
-      content: '',
-      timestamp: new Date(),
-    };
-    setMessages((prev) => [...prev, userMessage, assistantMessage]);
-    setIsStreaming(true);
-
-    try {
-      let fullContent = '';
-      for await (const chunk of streamChat(apiMessages, controller.signal)) {
-        fullContent += chunk;
-        setMessages((prev) => {
-          const updated = [...prev];
-          updated[updated.length - 1] = {
-            ...updated[updated.length - 1],
-            content: fullContent,
-          };
-          return updated;
-        });
-      }
-    } catch (error) {
-      if (controller.signal.aborted) return;
-      console.error('Chat error:', error);
-      const errMessage =
-        error instanceof Error ? error.message : 'Sorry, I encountered an error. Please try again.';
-      setMessages((prev) => {
-        const updated = [...prev];
-        updated[updated.length - 1] = {
-          ...updated[updated.length - 1],
-          content: errMessage,
-        };
-        return updated;
-      });
-    } finally {
-      abortRef.current = null;
-      setIsStreaming(false);
-    }
-  }, []);
-
-  const simulateTyping = useCallback(async (question: string, answer: string, stepsConfig?: ThinkingStepsConfig, imageUrl?: string) => {
+  const runSimulatedAssistantTurn = useCallback(
+    async (
+      mode: 'replace' | 'append',
+      question: string,
+      answer: string,
+      stepsConfig?: ThinkingStepsConfig,
+      imageUrl?: string,
+    ) => {
     cancelledRef.current = false;
     const userMsg: Message = { role: 'user', content: question, timestamp: new Date(), imageUrl };
     const assistantMsg: Message = { role: 'assistant', content: '', timestamp: new Date() };
-    setMessages([userMsg, assistantMsg]);
+    if (mode === 'replace') {
+      setMessages([userMsg, assistantMsg]);
+    } else {
+      setThinkingSteps([]);
+      setThinkingHeader(undefined);
+      setMessages((prev) => [...prev, userMsg, assistantMsg]);
+    }
     const counts = countStructuredElements(answer);
     setTotalTableRows(counts.tableRows);
     setTotalRoadmapStages(counts.roadmapStages);
@@ -1831,7 +2222,86 @@ export default function ChatPage({ initialMessage, simulatedResponse, simulatedS
       setTotalRoadmapStages(0);
       setIsStreaming(false);
     }
-  }, []);
+    },
+    [],
+  );
+
+  const simulateTyping = useCallback(
+    async (question: string, answer: string, stepsConfig?: ThinkingStepsConfig, imageUrl?: string) => {
+      await runSimulatedAssistantTurn('replace', question, answer, stepsConfig, imageUrl);
+    },
+    [runSimulatedAssistantTurn],
+  );
+
+  const sendMessage = useCallback(
+    async (text: string) => {
+      const cannedAnswer = simulatedResponses[text];
+      if (cannedAnswer !== undefined) {
+        cancelledRef.current = false;
+        abortRef.current?.abort();
+        abortRef.current = null;
+        const steps = simulatedThinkingSteps[text];
+        await runSimulatedAssistantTurn('append', text, cannedAnswer, steps);
+        return;
+      }
+
+      cancelledRef.current = false;
+      const controller = new AbortController();
+      abortRef.current = controller;
+
+      const userMessage: Message = {
+        role: 'user',
+        content: text,
+        timestamp: new Date(),
+      };
+
+      const allPrevMessages = messagesRef.current;
+      const apiMessages: APIChatMessage[] = [
+        ...allPrevMessages.map((m) => ({ role: m.role, content: m.content })),
+        { role: 'user' as const, content: text },
+      ];
+
+      const assistantMessage: Message = {
+        role: 'assistant',
+        content: '',
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, userMessage, assistantMessage]);
+      setIsStreaming(true);
+
+      try {
+        let fullContent = '';
+        for await (const chunk of streamChat(apiMessages, controller.signal)) {
+          fullContent += chunk;
+          setMessages((prev) => {
+            const updated = [...prev];
+            updated[updated.length - 1] = {
+              ...updated[updated.length - 1],
+              content: fullContent,
+            };
+            return updated;
+          });
+        }
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        console.error('Chat error:', error);
+        const errMessage =
+          error instanceof Error ? error.message : 'Sorry, I encountered an error. Please try again.';
+        setMessages((prev) => {
+          const updated = [...prev];
+          updated[updated.length - 1] = {
+            ...updated[updated.length - 1],
+            content: errMessage,
+          };
+          return updated;
+        });
+      } finally {
+        abortRef.current = null;
+        setIsStreaming(false);
+      }
+    },
+    [runSimulatedAssistantTurn],
+  );
 
   // Send initial message on mount
   useEffect(() => {
@@ -1900,6 +2370,7 @@ export default function ChatPage({ initialMessage, simulatedResponse, simulatedS
             maxWidth: '704px',
             paddingLeft: '8px',
             paddingRight: '8px',
+            paddingBottom: '0px',
             gap: '32px',
           }}
         >
@@ -1965,7 +2436,8 @@ export default function ChatPage({ initialMessage, simulatedResponse, simulatedS
             paddingLeft: '24px',
             paddingRight: '24px',
             paddingBottom: '19px',
-            paddingTop: '8px',
+            paddingTop: '0px',
+            marginTop: '-19px',
             background: 'rgba(255, 255, 255, 0)',
           }}
         >
@@ -1979,7 +2451,17 @@ export default function ChatPage({ initialMessage, simulatedResponse, simulatedS
               <ArrowDownIcon className="w-5 h-5" color="var(--alpha-light-400)" />
             </button>
           )}
-          <div className="w-full" style={{ maxWidth: '704px' }}>
+          {/* ── Unified chat-input shell: optional task bar header + input ── */}
+          <div
+            className={`chat-input-shell${taskTitle && taskBarMounted ? ' has-task-bar' : ''}`}
+          >
+            {taskTitle && taskBarMounted && (
+              <TaskDetailsBar
+                title={taskTitle}
+                visible={taskBarVisible}
+                onMarkDone={handleMarkTaskDone}
+              />
+            )}
             <ChatInput
               onSubmit={sendMessage}
               disabled={isStreaming}
