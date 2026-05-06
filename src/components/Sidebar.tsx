@@ -24,6 +24,9 @@ interface SidebarProps {
   collapsed?: boolean;
   onToggleCollapse?: () => void;
   onSettingsClick?: () => void;
+  /** When true, the sidebar is rendered as a fixed drawer overlay on mobile.
+   *  No-op on desktop (the desktop layout handles itself via flex). */
+  mobileOpen?: boolean;
 }
 
 const navItems: { key: SidebarPage; label: string; icon: typeof PenSparkleIcon; activeWhen: SidebarPage[] }[] = [
@@ -40,10 +43,11 @@ export default function Sidebar({
   collapsed = false,
   onToggleCollapse,
   onSettingsClick,
+  mobileOpen = false,
 }: SidebarProps) {
   return (
     <div
-      className="flex items-center h-full shrink-0 sidebar-root"
+      className={`hidden md:flex items-center h-full shrink-0 sidebar-root${mobileOpen ? ' is-mobile-open' : ''}`}
       style={{
         width: collapsed ? '56px' : '232px',
         paddingLeft: '8px',

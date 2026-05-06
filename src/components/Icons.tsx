@@ -480,3 +480,51 @@ export function CheckCircleIcon({ className, color = LIGHT_600 }: { className?: 
     </svg>
   );
 }
+
+/** Hamburger / list icon — three horizontal lines. Matches Figma `Icon/Large/Hamburger List`
+ *  (node 2953:12506) used in the mobile top bar. 20×20 artwork. */
+export function HamburgerIcon({ className = "w-5 h-5", color = LIGHT_600 }: { className?: string; color?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+      <path d="M3 6h14M3 10h14M3 14h14" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** Checklist icon — matches Figma `Icon/Large/Checklist` (node 3167:23639) used by the
+ *  mobile "Check in" task action. 20×20 artwork: two rows of bullet + line. */
+export function ChecklistIcon({ className = "w-6 h-6", color = LIGHT_600 }: { className?: string; color?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+      <path d="M5 8h.01M5 16h.01" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M10 8h9M10 16h9" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="5" cy="8" r="1.4" stroke={color} strokeWidth="1.5" />
+      <circle cx="5" cy="16" r="1.4" stroke={color} strokeWidth="1.5" />
+    </svg>
+  );
+}
+
+/** Document-pen icon — matches Figma `Icon/Large/Document pen` (node 3167:23687) used by
+ *  the mobile "Mark as done" task action. 20×20 artwork: doc with edit pen overlay. */
+export function DocumentPenIcon({ className = "w-6 h-6", color = LIGHT_600 }: { className?: string; color?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+      <path
+        d="M13 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"
+        stroke={color}
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path d="M9 13h4" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M9 17h6" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+      <path
+        d="M18.5 2.5a1.768 1.768 0 0 1 2.5 2.5L15 11l-3 1 1-3 5.5-6.5z"
+        stroke={color}
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}

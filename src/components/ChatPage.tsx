@@ -24,6 +24,10 @@ interface ChatPageProps {
    *  visible until the user clicks "Mark as done". */
   taskTitle?: string;
   onNewTask?: () => void;
+  /** Called when the user clicks "Mark as done" in the task details bar.
+   *  Use to bubble the completion event up to the parent (e.g. show a toast
+   *  and persist the done state across navigation). */
+  onMarkTaskDone?: () => void;
 }
 
 /* ── Helpers ── */
@@ -1888,7 +1892,7 @@ function countStructuredElements(text: string): { tableRows: number; roadmapStag
   return { tableRows, roadmapStages };
 }
 
-export default function ChatPage({ initialMessage, simulatedResponse, simulatedSteps, simulatedImage, taskTitle, onNewTask }: ChatPageProps) {
+export default function ChatPage({ initialMessage, simulatedResponse, simulatedSteps, simulatedImage, taskTitle, onNewTask, onMarkTaskDone }: ChatPageProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [totalTableRows, setTotalTableRows] = useState(0);
@@ -1928,7 +1932,8 @@ export default function ChatPage({ initialMessage, simulatedResponse, simulatedS
     // Unmount after the slide-down + fade transition completes (450ms is
     // a hair longer than the longest transition in `index.css`).
     setTimeout(() => setTaskBarMounted(false), 450);
-  }, []);
+    onMarkTaskDone?.();
+  }, [onMarkTaskDone]);
 
   // Voice / audio player state
   const [voiceContent, setVoiceContent] = useState<string | null>(null);

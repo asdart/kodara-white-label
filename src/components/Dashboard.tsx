@@ -11,10 +11,40 @@ import PlanPage from './PlanPage';
 import ConnectorsPage, { FacebookConnectModal } from './ConnectorsPage';
 import { ConnectorsModal } from './SettingsModal';
 import SettingsModal from './SettingsModal';
-import { PenSparkleIcon, AppleIcon } from './Icons';
+import { PenSparkleIcon, AppleIcon, CheckCircleIcon } from './Icons';
 import glowSvg from '../assets/ellipse-glow.svg';
 import ringSvg from '../assets/ellipse-border.svg';
 import crescentSvg from '../assets/figma-export/d251448fe157d8c297e9697d264bb33fa3827e0c.svg';
+
+function SuccessToast({ closing, onDismiss }: { closing: boolean; onDismiss: () => void }) {
+  return (
+    <div
+      className={`success-toast${closing ? ' closing' : ''}`}
+      onAnimationEnd={() => { if (closing) onDismiss(); }}
+      role="status"
+      aria-live="polite"
+    >
+      <span
+        className="flex items-center justify-center shrink-0"
+        style={{ width: '20px', height: '20px' }}
+      >
+        <CheckCircleIcon color="var(--alpha-brand-950)" />
+      </span>
+      <span
+        style={{
+          fontFamily: 'var(--font-primary)',
+          fontSize: 'var(--body-3-size)',
+          lineHeight: 'var(--body-3-line)',
+          letterSpacing: 'var(--body-3-spacing)',
+          fontWeight: 500,
+          color: 'var(--alpha-brand-950)',
+        }}
+      >
+        Task marked as done
+      </span>
+    </div>
+  );
+}
 
 export default function Dashboard() {
   const [currentPage, setCurrentPage] = useState<SidebarPage>('home');
@@ -23,8 +53,18 @@ export default function Dashboard() {
   const [chatSimulatedSteps, setChatSimulatedSteps] = useState<ThinkingStepsConfig | undefined>();
   const [chatSimulatedImage, setChatSimulatedImage] = useState<string | undefined>();
   const [chatTaskTitle, setChatTaskTitle] = useState<string | undefined>();
+  const [chatTaskId, setChatTaskId] = useState<string | undefined>();
   const [chatKey, setChatKey] = useState(0);
+  /** IDs of today-tasks the user marked done from within a chat session. */
+  const [doneTodayTaskIds, setDoneTodayTaskIds] = useState<string[]>([]);
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastClosing, setToastClosing] = useState(false);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  /** Mobile-only: drawer-style sidebar visibility. The desktop layout ignores this
+   *  flag because `.sidebar-root` is always visible above the `md` breakpoint. */
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [mobileSidebarClosing, setMobileSidebarClosing] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showConnectorsBar, setShowConnectorsBar] = useState(true);
   const [connectorsBarExpanded, setConnectorsBarExpanded] = useState(false);
@@ -68,7 +108,7 @@ export default function Dashboard() {
     setCurrentPage('chat');
   }, []);
 
-  const startSimulatedChat = useCallback((message: string, taskTitle?: string) => {
+  const startSimulatedChat = useCallback((message: string, taskTitle?: string, taskId?: string) => {
     const response = simulatedResponses[message];
     const steps = simulatedThinkingSteps[message];
     const image = simulatedImages[message];
@@ -77,17 +117,37 @@ export default function Dashboard() {
     setChatSimulatedSteps(steps);
     setChatSimulatedImage(image);
     setChatTaskTitle(taskTitle);
+    setChatTaskId(taskId);
     setChatKey((k) => k + 1);
     setCurrentPage('chat');
   }, []);
 
   const handleNavigate = useCallback((page: SidebarPage) => {
     setCurrentPage(page);
+    /* Auto-dismiss the mobile drawer whenever the user navigates so the page
+     * they jumped to is fully visible. */
+    setMobileSidebarOpen(false);
+    setMobileSidebarClosing(false);
   }, []);
+
+  const closeMobileSidebar = useCallback(() => {
+    setMobileSidebarClosing(true);
+  }, []);
+
+  const handleMarkChatTaskDone = useCallback(() => {
+    if (chatTaskId) {
+      setDoneTodayTaskIds((ids) => (ids.includes(chatTaskId) ? ids : [...ids, chatTaskId]));
+    }
+    // Show toast, auto-dismiss after 3 s
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToastClosing(false);
+    setToastVisible(true);
+    toastTimerRef.current = setTimeout(() => setToastClosing(true), 3000);
+  }, [chatTaskId]);
 
   return (
     <div
-      className="flex items-start w-full h-full rounded-3xl overflow-hidden relative"
+      className="flex items-start w-full h-full md:rounded-3xl overflow-hidden relative"
       style={{ background: 'var(--surface-primary)', transition: 'background 300ms ease' }}
     >
       {/* Background gradient behind main content */}
@@ -107,7 +167,24 @@ export default function Dashboard() {
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
         onSettingsClick={() => setShowSettings(true)}
+        mobileOpen={mobileSidebarOpen}
       />
+
+      {/* Mobile drawer backdrop — renders only while the drawer is open so
+       *  desktop is unaffected. CSS hides everything above the `md` breakpoint. */}
+      {mobileSidebarOpen && (
+        <div
+          className={`sidebar-mobile-backdrop md:hidden${mobileSidebarClosing ? ' closing' : ''}`}
+          onClick={closeMobileSidebar}
+          onAnimationEnd={() => {
+            if (mobileSidebarClosing) {
+              setMobileSidebarOpen(false);
+              setMobileSidebarClosing(false);
+            }
+          }}
+          role="presentation"
+        />
+      )}
 
       {/* Main content */}
       {currentPage === 'chat' ? (
@@ -119,6 +196,7 @@ export default function Dashboard() {
           simulatedImage={chatSimulatedImage}
           taskTitle={chatTaskTitle}
           onNewTask={() => setCurrentPage('new-task')}
+          onMarkTaskDone={handleMarkChatTaskDone}
         />
       ) : currentPage === 'tasks' ? (
         <MyChatsPage key="tasks" />
@@ -139,6 +217,8 @@ export default function Dashboard() {
           onCollapsedInputClick={() => { setPrefillText(undefined); setPrefillConnector(undefined); setCurrentPage('new-task'); }}
           onSeeAllTasks={() => setCurrentPage('tasks')}
           onStartSimulatedChat={startSimulatedChat}
+          onMobileMenuClick={() => setMobileSidebarOpen(true)}
+          externalDoneTasks={doneTodayTaskIds}
         />
       ) : (
         <div key="new-task" className="flex flex-col flex-1 min-h-0 min-w-0 relative h-full">
@@ -346,6 +426,13 @@ export default function Dashboard() {
           onClose={() => setShowFacebookModal(false)}
           onManageConnectors={() => { setShowFacebookModal(false); setShowConnectorsModal(true); }}
           onTryItOut={() => handleTryItOut('facebook')}
+        />
+      )}
+
+      {toastVisible && (
+        <SuccessToast
+          closing={toastClosing}
+          onDismiss={() => setToastVisible(false)}
         />
       )}
     </div>

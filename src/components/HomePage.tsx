@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import {
   HouseIcon,
   CalendarIcon,
@@ -10,6 +10,9 @@ import {
   XMarkIcon,
   CheckCircleIcon,
   SparkleNavIcon,
+  HamburgerIcon,
+  ChecklistIcon,
+  DocumentPenIcon,
 } from './Icons';
 import { GENERATE_ANGLES_PROMPT } from './SuggestionCards';
 
@@ -18,7 +21,11 @@ export interface HomePageProps {
   onCollapsedInputClick?: () => void;
   onSeeAllTasks?: () => void;
   /** Launch the chat with a pre-baked simulated conversation (e.g. "Generate angles" task). */
-  onStartSimulatedChat?: (message: string, taskTitle?: string) => void;
+  onStartSimulatedChat?: (message: string, taskTitle?: string, taskId?: string) => void;
+  /** Mobile-only — opens the sidebar drawer when the hamburger icon is tapped. */
+  onMobileMenuClick?: () => void;
+  /** Task IDs that were marked done from a chat session (persisted across navigation). */
+  externalDoneTasks?: string[];
 }
 
 interface Task {
@@ -84,7 +91,7 @@ function getTimeOfDayGreeting(): string {
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <span
-      className="font-medium whitespace-nowrap"
+      className="home-section-label font-medium whitespace-nowrap"
       style={{
         fontFamily: 'var(--font-primary)',
         fontSize: 'var(--label-2-size)',
@@ -325,6 +332,66 @@ function GenerateAnglesButton() {
  * reserve the right-side slot and prevent layout shift, then fades in on row
  * hover/focus via the `.home-task-card__label` opacity transition.
  */
+/**
+ * Mobile inline task action — `<icon (24×24)> + <label (16px)>` rendered flush
+ * underneath the description (no pill chrome). Matches Figma node 3078:12145
+ * ("Task action") and its variants used across the WL/Home mobile layout.
+ *
+ * Always visible on mobile (no hover-fade), unlike the desktop pill buttons.
+ */
+function MobileInlineAction({
+  icon,
+  label,
+}: {
+  icon: React.ReactNode;
+  label: string;
+}) {
+  return (
+    <div
+      className="home-task-card__label home-task-card__action--mobile flex items-center"
+      aria-hidden
+      style={{ gap: '4px' }}
+    >
+      <span
+        className="flex items-center justify-center shrink-0"
+        style={{ width: '24px', height: '24px' }}
+      >
+        {icon}
+      </span>
+      <span
+        className="font-medium whitespace-nowrap"
+        style={{
+          fontFamily: 'var(--font-primary)',
+          fontSize: '16px',
+          lineHeight: '24px',
+          letterSpacing: '-0.15px',
+          color: 'var(--alpha-light-600)',
+        }}
+      >
+        {label}
+      </span>
+    </div>
+  );
+}
+
+/** Returns the mobile inline action that matches the same task variant logic
+ *  used by the desktop hover pills. */
+function getMobileAction(task: Task): React.ReactNode {
+  if (task.done) {
+    return <MobileInlineAction icon={<DocumentPenIcon className="w-6 h-6" color="var(--alpha-light-600)" />} label="Edit" />;
+  }
+  if (task.checkIn) {
+    return <MobileInlineAction icon={<ChecklistIcon className="w-6 h-6" color="var(--alpha-light-600)" />} label="Check in" />;
+  }
+  if (task.markAsDone) {
+    return <MobileInlineAction icon={<DocumentPenIcon className="w-6 h-6" color="var(--alpha-light-600)" />} label="Mark as done" />;
+  }
+  if (task.generateAngles) {
+    return <MobileInlineAction icon={<SparkleNavIcon className="w-6 h-6" color="var(--alpha-light-600)" />} label="Generate new angles" />;
+  }
+  return <MobileInlineAction icon={<PlayIcon color="var(--alpha-light-600)" />} label="Start task" />;
+}
+
 function StartTaskButton() {
   return (
     <div
@@ -453,23 +520,29 @@ function OverdueTaskCard({
         </div>
 
         <div className="home-task-card__cta-slot">
-          {task.done ? (
-            task.checkIn ? (
-              <EditTaskButton />
+          {/* Desktop hover-pill action — hidden on mobile */}
+          <div className="hidden md:flex">
+            {task.done ? (
+              task.checkIn ? (
+                <EditTaskButton />
+              ) : task.markAsDone ? (
+                <UndoMarkDoneButton />
+              ) : (
+                <EditTaskButton />
+              )
+            ) : task.checkIn ? (
+              <CheckInTaskButton />
             ) : task.markAsDone ? (
-              <UndoMarkDoneButton />
+              <MarkAsDoneButton />
+            ) : task.generateAngles ? (
+              <GenerateAnglesButton />
             ) : (
-              <EditTaskButton />
-            )
-          ) : task.checkIn ? (
-            <CheckInTaskButton />
-          ) : task.markAsDone ? (
-            <MarkAsDoneButton />
-          ) : task.generateAngles ? (
-            <GenerateAnglesButton />
-          ) : (
-            <StartTaskButton />
-          )}
+              <StartTaskButton />
+            )}
+          </div>
+
+          {/* Mobile inline action — visible only below the `md` breakpoint */}
+          <div className="flex md:hidden">{getMobileAction(task)}</div>
         </div>
       </button>
     </div>
@@ -519,23 +592,29 @@ function TodayTaskCard({
         </p>
 
         <div className="home-task-card__cta-slot">
-          {task.done ? (
-            task.checkIn ? (
-              <EditTaskButton />
+          {/* Desktop hover-pill action — hidden on mobile */}
+          <div className="hidden md:flex">
+            {task.done ? (
+              task.checkIn ? (
+                <EditTaskButton />
+              ) : task.markAsDone ? (
+                <UndoMarkDoneButton />
+              ) : (
+                <EditTaskButton />
+              )
+            ) : task.checkIn ? (
+              <CheckInTaskButton />
             ) : task.markAsDone ? (
-              <UndoMarkDoneButton />
+              <MarkAsDoneButton />
+            ) : task.generateAngles ? (
+              <GenerateAnglesButton />
             ) : (
-              <EditTaskButton />
-            )
-          ) : task.checkIn ? (
-            <CheckInTaskButton />
-          ) : task.markAsDone ? (
-            <MarkAsDoneButton />
-          ) : task.generateAngles ? (
-            <GenerateAnglesButton />
-          ) : (
-            <StartTaskButton />
-          )}
+              <StartTaskButton />
+            )}
+          </div>
+
+          {/* Mobile inline action — visible only below the `md` breakpoint */}
+          <div className="flex md:hidden">{getMobileAction(task)}</div>
         </div>
       </button>
     </div>
@@ -653,6 +732,102 @@ function CollapsedChatInput({ onClick }: { onClick?: () => void }) {
         </span>
       </span>
     </button>
+  );
+}
+
+/**
+ * Mobile bottom chat bar — matches Figma node 2953:12513 (`Bottom container`).
+ * Renders as two side-by-side pills:
+ *   1. A 52×52 circular `+` button (Figma node 2953:12531 `Chat button`).
+ *   2. A 52px-tall capsule input (`Text Field_mobile`, node 2953:12533) with
+ *      a placeholder, mic button on the right, and a gradient send pill.
+ * The whole strip is a CTA — tapping anywhere hands off composition to the
+ * dedicated New task screen, mirroring the desktop `CollapsedChatInput`.
+ */
+function MobileBottomChatBar({ onClick }: { onClick?: () => void }) {
+  const placeholder = 'Ask Leanne AI...';
+
+  return (
+    <div className="flex items-center w-full" style={{ gap: '6px' }}>
+      {/* Plus button — 52×52 circular, white pill, matches `Chat button` */}
+      <button
+        type="button"
+        onClick={onClick}
+        aria-label="Compose new task"
+        className="flex items-center justify-center shrink-0 cursor-pointer"
+        style={{
+          width: '52px',
+          height: '52px',
+          borderRadius: 'var(--radius-full)',
+          background: 'var(--color-white)',
+          border: '1px solid var(--alpha-light-100)',
+          boxShadow:
+            '0px 8px 5px 0px rgba(0,0,0,0.01), 0px 4px 4px 0px rgba(0,0,0,0.02), 0px 1px 2px 0px rgba(0,0,0,0.02)',
+        }}
+      >
+        <PlusIcon className="w-5 h-5" color="var(--alpha-light-600)" />
+      </button>
+
+      {/* Capsule input — placeholder + mic + send. Visually a single field
+       *  but actually a button that delegates to the New task screen. */}
+      <button
+        type="button"
+        onClick={onClick}
+        aria-label={placeholder}
+        className="flex items-center cursor-pointer text-left"
+        style={{
+          flex: '1 0 0',
+          minWidth: 0,
+          height: '52px',
+          paddingLeft: '20px',
+          paddingRight: '6px',
+          gap: '12px',
+          borderRadius: 'var(--radius-full)',
+          background: 'var(--color-white)',
+          border: '1px solid var(--alpha-light-100)',
+          boxShadow:
+            '0px 8px 5px 0px rgba(0,0,0,0.01), 0px 4px 4px 0px rgba(0,0,0,0.02), 0px 1px 2px 0px rgba(0,0,0,0.02)',
+        }}
+      >
+        <span
+          className="truncate"
+          style={{
+            flex: '1 0 0',
+            minWidth: 0,
+            fontFamily: 'var(--font-primary)',
+            fontWeight: 'var(--weight-regular)',
+            fontSize: '16px',
+            lineHeight: '24px',
+            letterSpacing: '-0.15px',
+            color: 'var(--alpha-light-600)',
+          }}
+        >
+          {placeholder}
+        </span>
+
+        <span
+          className="flex items-center justify-center shrink-0"
+          style={{ width: '40px', height: '40px' }}
+        >
+          <MicIcon className="w-5 h-5" color="var(--alpha-light-600)" />
+        </span>
+
+        <span
+          className="flex items-center justify-center shrink-0"
+          style={{
+            width: '40px',
+            height: '40px',
+            borderRadius: 'var(--radius-full)',
+            background:
+              'linear-gradient(180deg, rgba(255,255,255,0) 0%, var(--alpha-light-200) 100%), var(--color-white)',
+            boxShadow:
+              '0px 2px 1px -1px rgba(0,0,0,0.08), inset 0px 0px 3px 0px var(--alpha-light-300)',
+          }}
+        >
+          <ArrowUpIcon className="w-5 h-5" color="var(--alpha-light-600)" />
+        </span>
+      </button>
+    </div>
   );
 }
 
@@ -836,6 +1011,8 @@ export default function HomePage({
   onCollapsedInputClick,
   onSeeAllTasks,
   onStartSimulatedChat,
+  onMobileMenuClick,
+  externalDoneTasks,
 }: HomePageProps) {
   const greeting = useMemo(() => getTimeOfDayGreeting(), []);
   const [todayTasks, setTodayTasks] = useState<Task[]>(INITIAL_TODAY_TASKS);
@@ -845,7 +1022,15 @@ export default function HomePage({
     ? todayTasks.find((t) => t.id === checkInTaskId) ?? null
     : null;
 
-  const handleTaskClick = (task: Task) => {
+  /** Merge externally-done tasks (marked done from a chat session) into the local list. */
+  const displayTasks = useMemo<Task[]>(() => {
+    if (!externalDoneTasks?.length) return todayTasks;
+    return todayTasks.map((t) =>
+      !t.done && externalDoneTasks.includes(t.id) ? { ...t, done: true } : t,
+    );
+  }, [todayTasks, externalDoneTasks]);
+
+  const handleTaskClick = useCallback((task: Task) => {
     if (task.checkIn) {
       setCheckInTaskId(task.id);
       return;
@@ -857,9 +1042,9 @@ export default function HomePage({
       return;
     }
     if (task.generateAngles) {
-      onStartSimulatedChat?.(GENERATE_ANGLES_PROMPT, task.description);
+      onStartSimulatedChat?.(GENERATE_ANGLES_PROMPT, task.description, task.id);
     }
-  };
+  }, [onStartSimulatedChat]);
 
   const handleCheckInSubmit = (revenue: string) => {
     if (!checkInTaskId) return;
@@ -870,11 +1055,12 @@ export default function HomePage({
     );
   };
 
-  const remainingCount = todayTasks.filter((t) => !t.done).length;
+  const remainingCount = displayTasks.filter((t) => !t.done).length;
 
   return (
     <div className="flex flex-col flex-1 min-h-0 min-w-0 relative h-full">
-      {/* Top bar */}
+      {/* Top bar — hamburger + page title on mobile (matches Figma node 2953:12504),
+       *  house + page title on desktop. Both share the same layout slot. */}
       <div
         className="flex items-center justify-between shrink-0"
         style={{
@@ -887,7 +1073,36 @@ export default function HomePage({
           backdropFilter: 'blur(4px)',
         }}
       >
-        <div className="flex items-center" style={{ gap: '6px' }}>
+        {/* Mobile — hamburger button + label */}
+        <button
+          type="button"
+          onClick={onMobileMenuClick}
+          aria-label="Open menu"
+          className="flex md:hidden items-center cursor-pointer"
+          style={{
+            gap: '16px',
+            background: 'none',
+            border: 'none',
+            padding: 0,
+          }}
+        >
+          <HamburgerIcon className="w-5 h-5 shrink-0" color="var(--alpha-light-600)" />
+          <span
+            className="font-medium whitespace-nowrap"
+            style={{
+              fontFamily: 'var(--font-primary)',
+              fontSize: 'var(--body-3-size)',
+              lineHeight: 'var(--body-3-line)',
+              letterSpacing: 'var(--body-3-spacing)',
+              color: 'var(--alpha-light-600)',
+            }}
+          >
+            Home
+          </span>
+        </button>
+
+        {/* Desktop — house icon + label (matches existing behavior) */}
+        <div className="hidden md:flex items-center" style={{ gap: '6px' }}>
           <HouseIcon className="w-5 h-5 shrink-0" color="var(--alpha-light-600)" />
           <span
             className="font-medium whitespace-nowrap"
@@ -997,14 +1212,14 @@ export default function HomePage({
             >
               <div
                 className="flex items-center justify-between w-full"
-                style={{ height: '20px' }}
+                style={{ minHeight: '20px' }}
               >
                 <SectionLabel>Today</SectionLabel>
                 {onSeeAllTasks && (
                   <button
                     type="button"
                     onClick={onSeeAllTasks}
-                    className="font-medium cursor-pointer hover:opacity-80 transition-opacity"
+                    className="home-section-label font-medium cursor-pointer hover:opacity-80 transition-opacity"
                     style={{
                       fontFamily: 'var(--font-primary)',
                       fontSize: 'var(--body-3-size)',
@@ -1021,7 +1236,7 @@ export default function HomePage({
                 )}
               </div>
               <div className="flex flex-col w-full" style={{ gap: '6px' }}>
-                {todayTasks.map((task, i) => (
+                {displayTasks.map((task, i) => (
                   <TodayTaskCard
                     key={task.id}
                     task={task}
@@ -1035,9 +1250,11 @@ export default function HomePage({
         </div>
       </div>
 
-      {/* Bottom collapsed chat input — pinned to bottom, secondary action */}
+      {/* Bottom collapsed chat input — pinned to bottom, secondary action.
+       *  Renders the desktop CollapsedChatInput at md+ and the iPhone-styled
+       *  two-pill MobileBottomChatBar below the breakpoint. */}
       <div
-        className="chat-card-enter shrink-0 flex items-center justify-center w-full relative"
+        className="chat-card-enter shrink-0 hidden md:flex items-center justify-center w-full relative"
         style={{
           paddingTop: '32px',
           paddingBottom: '32px',
@@ -1046,9 +1263,22 @@ export default function HomePage({
           animationDelay: '300ms',
         }}
       >
-        <div className="w-full" style={{ maxWidth: '704px' }}>
+        <div className="w-full mx-auto" style={{ maxWidth: '704px' }}>
           <CollapsedChatInput onClick={onCollapsedInputClick} />
         </div>
+      </div>
+
+      <div
+        className="chat-card-enter shrink-0 flex md:hidden items-center justify-center w-full relative"
+        style={{
+          paddingTop: '24px',
+          paddingBottom: '24px',
+          paddingLeft: '16px',
+          paddingRight: '16px',
+          animationDelay: '300ms',
+        }}
+      >
+        <MobileBottomChatBar onClick={onCollapsedInputClick} />
       </div>
 
       {checkInTask && (
