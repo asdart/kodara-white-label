@@ -472,6 +472,7 @@ input, button, select, textarea, [contenteditable] {
 }
 
 .task-details-bar {
+  background-color: rgba(255, 255, 255, 1);
   border-bottom: 1px solid var(--alpha-light-100);
   transform-origin: bottom center;
   will-change: transform, opacity;
@@ -912,18 +913,9 @@ input, button, select, textarea, [contenteditable] {
   transition: color 150ms ease;
 }
 
+/* Inline action label — always visible on all screen sizes (Figma WL/Home 3024:18903) */
 .home-task-card .home-task-card__label {
-  opacity: 0;
-  transition: opacity 150ms ease;
-}
-
-/* Right-side hover CTA column — fixed width so swapping pills (e.g. icon + "Mark as done"
- * → narrower "Undone") never changes how the title wraps. */
-.home-task-card__cta-slot {
-  flex: 0 0 228px;
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
+  opacity: 1;
 }
 
 .home-task-card:hover,
@@ -939,19 +931,15 @@ input, button, select, textarea, [contenteditable] {
   --home-task-card-border: var(--color-red-200);
 }
 
-.home-task-card:hover .home-task-card__label,
-.home-task-card:focus-visible .home-task-card__label {
-  opacity: 1;
-}
-
-/* Completed (e.g. submitted check-in) — title uses alpha-400; hover keeps border
- * and title color unchanged from default (background still lifts like other rows). */
+/* Completed — neutral/50 background, dimmed text, border stays at rest colour. */
 .home-task-card.home-task-card--done {
+  --home-task-card-bg: var(--color-neutral-50);
   --home-task-card-text: var(--alpha-light-400);
 }
 
 .home-task-card.home-task-card--done:hover,
 .home-task-card.home-task-card--done:focus-visible {
+  --home-task-card-bg: var(--color-neutral-50);
   --home-task-card-border: var(--home-task-card-border-rest);
   --home-task-card-text: var(--alpha-light-400);
   outline: none;
@@ -966,59 +954,14 @@ input, button, select, textarea, [contenteditable] {
   --home-task-card-border: var(--color-red-100);
 }
 
-/* DEBUG — temporary marker to verify the mobile media query is firing. */
-@media (max-width: 767px) {
-  body::before {
-    content: 'mobile';
-    position: fixed;
-    top: 0;
-    left: 0;
-    z-index: 9999;
-    background: red;
-    color: white;
-    padding: 4px;
-    font-size: 12px;
-  }
-}
-
 /* ── Mobile responsive — Home (matches Figma WL/Home, node 2953:12499) ──
- * Below the `md` breakpoint we drop the sidebar, stack the task card content
- * vertically (description above an always-visible inline action), and adopt
- * the iPhone-styled bottom chat input row. */
+ * Below the `md` breakpoint we adopt the iPhone-styled bottom chat input row
+ * and scale up the task card and section label typography. */
 @media (max-width: 767px) {
-  /* Cards: column layout, always-visible inline action, larger body text */
-  .home-task-card {
-    flex-direction: column !important;
-    align-items: stretch !important;
-    gap: 12px !important;
-    padding: 16px !important;
-    border-radius: 24px !important;
-  }
-
-  .home-task-card__cta-slot {
-    flex: 0 0 auto !important;
-    width: auto !important;
-    justify-content: flex-start !important;
-    align-items: flex-start !important;
-  }
-
-  /* Always show the action label (no hover-fade on touch) */
-  .home-task-card .home-task-card__label {
-    opacity: 1 !important;
-  }
-
   /* On mobile, descriptions use Body-2 (16px / 24px) per Figma tokens */
   .home-task-card .home-task-card__text {
     font-size: 16px !important;
     line-height: 24px !important;
-  }
-
-  /* Mobile inline action — strip pill chrome so it sits flush like the design */
-  .home-task-card__action--mobile {
-    padding: 0 !important;
-    border: none !important;
-    background: none !important;
-    border-radius: 0 !important;
   }
 
   /* Section labels (Today, Overdue) — Figma uses Body-2 / 16px on mobile */

@@ -496,35 +496,93 @@ export function HamburgerIcon({ className = "w-5 h-5", color = LIGHT_600 }: { cl
 export function ChecklistIcon({ className = "w-6 h-6", color = LIGHT_600 }: { className?: string; color?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-      <path d="M5 8h.01M5 16h.01" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M10 8h9M10 16h9" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx="5" cy="8" r="1.4" stroke={color} strokeWidth="1.5" />
-      <circle cx="5" cy="16" r="1.4" stroke={color} strokeWidth="1.5" />
+      <path
+        d="M9.46094 12.8174C9.72182 12.541 10.155 12.5018 10.4629 12.7383C10.7707 12.975 10.8447 13.4043 10.6445 13.7275L10.6006 13.79L7.20312 18.207C7.07154 18.3781 6.87258 18.4841 6.65723 18.498C6.44207 18.5119 6.23161 18.4327 6.0791 18.2803L4.71973 16.9209L4.66797 16.8643C4.42791 16.5697 4.44521 16.1349 4.71973 15.8604C4.99442 15.5859 5.42913 15.5691 5.72363 15.8096L5.78027 15.8604L6.53516 16.6152L9.41113 12.876L9.46094 12.8174Z"
+        fill={color}
+      />
+      <path
+        d="M19.25 15C19.6642 15 20 15.3358 20 15.75C20 16.1642 19.6642 16.5 19.25 16.5H13.25C12.8358 16.5 12.5 16.1642 12.5 15.75C12.5 15.3358 12.8358 15 13.25 15H19.25Z"
+        fill={color}
+      />
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M8.75 5C9.7165 5 10.5 5.7835 10.5 6.75V9.25C10.5 10.2165 9.7165 11 8.75 11H6.25C5.2835 11 4.5 10.2165 4.5 9.25V6.75C4.5 5.7835 5.2835 5 6.25 5H8.75ZM6.25 6.5C6.11193 6.5 6 6.61193 6 6.75V9.25C6 9.38807 6.11193 9.5 6.25 9.5H8.75C8.88807 9.5 9 9.38807 9 9.25V6.75C9 6.61193 8.88807 6.5 8.75 6.5H6.25Z"
+        fill={color}
+      />
+      <path
+        d="M19.25 7.5C19.6642 7.5 20 7.83579 20 8.25C20 8.66421 19.6642 9 19.25 9H13.25C12.8358 9 12.5 8.66421 12.5 8.25C12.5 7.83579 12.8358 7.5 13.25 7.5H19.25Z"
+        fill={color}
+      />
     </svg>
   );
 }
 
-/** Document-pen icon — matches Figma `Icon/Large/Document pen` (node 3167:23687) used by
- *  the mobile "Mark as done" task action. 20×20 artwork: doc with edit pen overlay. */
-export function DocumentPenIcon({ className = "w-6 h-6", color = LIGHT_600 }: { className?: string; color?: string }) {
+/** Document-pen icon — used for the "Edit" task action (done-state variant). */
+export function DocumentPenIcon({ className, color = LIGHT_600 }: { className?: string; color?: string }) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-      <path
-        d="M13 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"
-        stroke={color}
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path d="M9 13h4" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
-      <path d="M9 17h6" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
-      <path
-        d="M18.5 2.5a1.768 1.768 0 0 1 2.5 2.5L15 11l-3 1 1-3 5.5-6.5z"
-        stroke={color}
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
+    <div
+      className={className}
+      style={{
+        display: 'flex',
+        width: '24px',
+        height: '24px',
+        justifyContent: 'center',
+        alignItems: 'center',
+        aspectRatio: '1 / 1',
+        flexShrink: 0,
+      }}
+    >
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+        <path
+          fillRule="evenodd"
+          clipRule="evenodd"
+          d="M13.153 0.847103C12.0234 -0.282217 10.1917 -0.282648 9.06262 0.847493L8.05149 1.85862C8.03963 1.86908 8.02803 1.87997 8.0167 1.8913C8.00537 1.90263 7.99447 1.91424 7.98402 1.92609L1.73569 8.17442C1.38475 8.52535 1.12609 9.04969 0.932507 9.53835C0.729856 10.0499 0.561017 10.6222 0.42678 11.1471C0.291854 11.6746 0.188114 12.1694 0.118185 12.5313C0.0831394 12.7127 0.0563919 12.8618 0.0382979 12.9661C0.0292471 13.0184 0.0222699 13.0599 0.0175723 13.0884C-0.0371591 13.3366 0.0375437 13.5978 0.219564 13.78L0.220564 13.781C0.402676 13.9632 0.664556 14.0379 0.912873 13.9831C0.941318 13.9784 0.982413 13.9715 1.03462 13.9625C1.139 13.9444 1.28804 13.9176 1.46943 13.8826C1.83138 13.8127 2.32613 13.7089 2.85372 13.574C3.37862 13.4398 3.95088 13.2709 4.46242 13.0683C4.95108 12.8747 5.47542 12.616 5.82635 12.2651L13.1533 4.93808C14.2831 3.80836 14.2835 1.97624 13.153 0.847103ZM8.54808 3.48335L2.79635 9.23508C2.67378 9.35765 2.50632 9.63831 2.32706 10.0908C2.15687 10.5204 2.00615 11.0255 1.88001 11.5187C1.80935 11.795 1.74757 12.063 1.69526 12.3055C1.93781 12.2532 2.20576 12.1914 2.48207 12.1208C2.9753 11.9946 3.48035 11.8439 3.90996 11.6737C4.36246 11.4944 4.64313 11.327 4.76569 11.2044L10.5174 5.45269L8.54808 3.48335ZM11.5781 4.39203L12.0927 3.87742C12.637 3.33314 12.6365 2.45126 12.093 1.9084C11.5487 1.36411 10.6665 1.36425 10.1237 1.90776L9.60874 2.42269L11.5781 4.39203Z"
+          fill={color}
+        />
+      </svg>
+    </div>
+  );
+}
+
+/** Mark-as-done icon — document with text lines and a pen overlay.
+ *  Used for the "Mark as done" task action inline label. */
+export function MarkAsDoneIcon({ className, color = LIGHT_600 }: { className?: string; color?: string }) {
+  return (
+    <div
+      className={className}
+      style={{
+        display: 'flex',
+        width: '24px',
+        height: '24px',
+        justifyContent: 'center',
+        alignItems: 'center',
+        aspectRatio: '1 / 1',
+        flexShrink: 0,
+      }}
+    >
+      <svg width="16" height="17" viewBox="0 0 16 17" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+        <path
+          fillRule="evenodd"
+          clipRule="evenodd"
+          d="M0 2.75C0 1.23203 1.23054 0 2.75 0H8.336C8.79986 0 9.24464 0.183977 9.57333 0.51267L13.4859 4.42526C13.8164 4.7543 14 5.2016 14 5.664V7.329C14 7.74321 13.6642 8.079 13.25 8.079C12.8358 8.079 12.5 7.74321 12.5 7.329V6.00005H9.75C8.78379 6.00005 8 5.21626 8 4.25005V1.5H2.75C2.05946 1.5 1.5 2.05997 1.5 2.75V13.25C1.5 13.94 2.05946 14.5 2.75 14.5H6.451C6.86521 14.5 7.201 14.8358 7.201 15.25C7.201 15.6642 6.86521 16 6.451 16H2.75C1.23054 16 0 14.768 0 13.25V2.75ZM9.5 2.56066L11.4394 4.50005H9.75C9.61221 4.50005 9.5 4.38784 9.5 4.25005V2.56066Z"
+          fill={color}
+        />
+        <path
+          d="M3 5.75C3 5.33579 3.33579 5 3.75 5H5.75C6.16421 5 6.5 5.33579 6.5 5.75C6.5 6.16421 6.16421 6.5 5.75 6.5H3.75C3.33579 6.5 3 6.16421 3 5.75Z"
+          fill={color}
+        />
+        <path
+          d="M3 8.75C3 8.33579 3.33579 8 3.75 8H8.25C8.66421 8 9 8.33579 9 8.75C9 9.16421 8.66421 9.5 8.25 9.5H3.75C3.33579 9.5 3 9.16421 3 8.75Z"
+          fill={color}
+        />
+        <path
+          fillRule="evenodd"
+          clipRule="evenodd"
+          d="M15.4154 9.58457C14.6438 8.81304 13.3909 8.79832 12.6097 9.57957L9.30669 12.8826C9.12101 13.0682 8.97683 13.2955 8.88988 13.5487L8.88952 13.5498L8.04115 16.005C7.9474 16.2763 8.01672 16.5773 8.21969 16.7802C8.42266 16.9832 8.72367 17.0525 8.99497 16.9588L11.4501 16.1104L11.4511 16.1101C11.7044 16.0231 11.9317 15.8789 12.1174 15.6932L15.4204 12.3902C16.2005 11.6101 16.1862 10.3571 15.4154 9.58457ZM13.6704 10.6402C13.857 10.4535 14.16 10.4508 14.3545 10.645C14.5492 10.8405 14.5454 11.1438 14.3597 11.3296L11.0567 14.6326C11.0286 14.6606 10.9963 14.6803 10.9639 14.6914L9.9625 15.0374L10.3079 14.0378L10.3085 14.036C10.3196 14.0037 10.3393 13.9713 10.3674 13.9432L13.6704 10.6402Z"
+          fill={color}
+        />
+      </svg>
+    </div>
   );
 }

@@ -1,7 +1,6 @@
 import {
   PenSparkleIcon,
-  BarChartAiIcon,
-  VideoIcon,
+  ChatAiIcon,
   BookIcon,
   SettingsIcon,
   SidebarCollapseIcon,
@@ -12,7 +11,6 @@ export type SidebarPage =
   | 'home'
   | 'new-task'
   | 'tasks'
-  | 'courses'
   | 'plan'
   | 'connectors'
   | 'skills'
@@ -31,9 +29,8 @@ interface SidebarProps {
 
 const navItems: { key: SidebarPage; label: string; icon: typeof PenSparkleIcon; activeWhen: SidebarPage[] }[] = [
   { key: 'home', label: 'Home', icon: HouseIcon, activeWhen: ['home'] },
-  { key: 'new-task', label: 'New task', icon: PenSparkleIcon, activeWhen: ['new-task', 'chat'] },
-  { key: 'tasks', label: 'My tasks', icon: BarChartAiIcon, activeWhen: ['tasks'] },
-  { key: 'courses', label: 'Courses', icon: VideoIcon, activeWhen: ['courses'] },
+  { key: 'new-task', label: 'New chats', icon: PenSparkleIcon, activeWhen: ['new-task', 'chat'] },
+  { key: 'tasks', label: 'Chats', icon: ChatAiIcon, activeWhen: ['tasks'] },
   { key: 'plan', label: 'Plan', icon: BookIcon, activeWhen: ['plan'] },
 ];
 

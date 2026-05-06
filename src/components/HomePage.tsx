@@ -8,11 +8,11 @@ import {
   DotsVerticalIcon,
   PlayIcon,
   XMarkIcon,
-  CheckCircleIcon,
   SparkleNavIcon,
   HamburgerIcon,
   ChecklistIcon,
   DocumentPenIcon,
+  MarkAsDoneIcon,
 } from './Icons';
 import { GENERATE_ANGLES_PROMPT } from './SuggestionCards';
 
@@ -31,16 +31,18 @@ export interface HomePageProps {
 interface Task {
   id: string;
   description: string;
-  /** When true, hover shows "Check-in" instead of "Start task" (daily check-in flow). */
+  /** When true, shows "Check-in" action (daily check-in flow). */
   checkIn?: boolean;
-  /** When true, hover shows "Mark as done" (matches Figma `Product_button` node 3169:25118). */
+  /** When true, shows "Mark as done" action. */
   markAsDone?: boolean;
-  /** When true, hover shows sparkle + "Generate angles" (Figma `Product_button` node 3189:26409). */
+  /** When true, shows sparkle + "Generate new angles" action. */
   generateAngles?: boolean;
-  /** Set after a successful check-in submit. Strikethrough text + hover shows "Edit". */
+  /** Set after a successful check-in submit. Strikethrough text + shows "Edit". */
   done?: boolean;
   /** Last submitted check-in value, prefilled when re-opening the modal via Edit. */
   checkInValue?: string;
+  /** Override the default action label for this task type. */
+  actionLabel?: string;
 }
 
 interface OverdueTask extends Task {
@@ -51,13 +53,8 @@ const OVERDUE_TASKS: OverdueTask[] = [
   {
     id: 'overdue-1',
     dueLabel: '29 Apr',
-    description:
-      'Launch first batch of 4-6 new ad creatives in one ad set per platform with broad targeting',
-  },
-  {
-    id: 'overdue-2',
-    dueLabel: '29 Apr',
     description: 'Refresh your ads before they stop converting',
+    generateAngles: true,
   },
 ];
 
@@ -69,8 +66,9 @@ const INITIAL_TODAY_TASKS: Task[] = [
   },
   {
     id: 'today-2',
-    description: 'Refresh your ads before they stop converting',
+    description: 'Identify Your Most Profitable Offer',
     generateAngles: true,
+    actionLabel: 'Find weak spots',
   },
   {
     id: 'today-3',
@@ -105,241 +103,11 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** Hover-only "Undone" — shown when a `markAsDone` row is completed (click row again to revert). */
-function UndoMarkDoneButton() {
-  return (
-    <div
-      className="home-task-card__label flex flex-col items-center justify-center shrink-0 overflow-hidden"
-      style={{
-        paddingLeft: '12px',
-        paddingRight: '12px',
-        paddingTop: '4px',
-        paddingBottom: '4px',
-        borderRadius: '8px',
-        border: '1px solid var(--alpha-light-100)',
-        background:
-          'linear-gradient(180deg, var(--color-neutral-50) 0%, #f5f5f5 100%)',
-      }}
-      aria-hidden
-    >
-      <span
-        className="font-medium whitespace-nowrap"
-        style={{
-          fontFamily: 'var(--font-primary)',
-          fontSize: 'var(--body-3-size)',
-          lineHeight: 'var(--body-3-line)',
-          letterSpacing: 'var(--body-3-spacing)',
-          color: 'var(--alpha-light-600)',
-          textAlign: 'center',
-        }}
-      >
-        Undone
-      </span>
-    </div>
-  );
-}
-
 /**
- * Hover-only "Edit" CTA pill — shown on completed check-in rows (label-only variant).
- * Same hover-fade pattern as `StartTaskButton`/`CheckInTaskButton` via `.home-task-card__label`.
+ * Inline task action — icon (24×24) + label, rendered beneath the description.
+ * Always visible on all screen sizes (matches Figma WL/Home node 3024:18903).
  */
-function EditTaskButton() {
-  return (
-    <div
-      className="home-task-card__label flex flex-col items-center justify-center shrink-0 overflow-hidden"
-      style={{
-        paddingLeft: '12px',
-        paddingRight: '12px',
-        paddingTop: '4px',
-        paddingBottom: '4px',
-        borderRadius: '8px',
-        border: '1px solid var(--alpha-light-100)',
-        background:
-          'linear-gradient(180deg, var(--color-neutral-50) 0%, #f5f5f5 100%)',
-      }}
-      aria-hidden
-    >
-      <span
-        className="font-medium whitespace-nowrap"
-        style={{
-          fontFamily: 'var(--font-primary)',
-          fontSize: 'var(--body-3-size)',
-          lineHeight: 'var(--body-3-line)',
-          letterSpacing: 'var(--body-3-spacing)',
-          color: 'var(--alpha-light-600)',
-          textAlign: 'center',
-        }}
-      >
-        Edit
-      </span>
-    </div>
-  );
-}
-
-/**
- * Hover-only "Check-in" CTA — same shell as `StartTaskButton`; fades in via `.home-task-card__label`.
- */
-function CheckInTaskButton() {
-  return (
-    <div
-      className="home-task-card__label flex flex-col items-center justify-center shrink-0 overflow-hidden"
-      style={{
-        paddingLeft: '8px',
-        paddingRight: '8px',
-        paddingTop: '4px',
-        paddingBottom: '4px',
-        borderRadius: '8px',
-        border: '1px solid var(--alpha-light-100)',
-        background:
-          'linear-gradient(180deg, var(--color-neutral-50) 0%, #f5f5f5 100%)',
-      }}
-      aria-hidden
-    >
-      <span className="flex items-center">
-        <span
-          className="flex items-center justify-center shrink-0 overflow-hidden relative"
-          style={{ width: '20px', height: '20px' }}
-        >
-          <CalendarIcon color="var(--alpha-light-600)" />
-        </span>
-        <span
-          className="flex items-center justify-center"
-          style={{ paddingLeft: '4px', paddingRight: '4px' }}
-        >
-          <span
-            className="font-medium whitespace-nowrap"
-            style={{
-              fontFamily: 'var(--font-primary)',
-              fontSize: 'var(--body-3-size)',
-              lineHeight: 'var(--body-3-line)',
-              letterSpacing: 'var(--body-3-spacing)',
-              color: 'var(--alpha-light-600)',
-              textAlign: 'center',
-            }}
-          >
-            Check-in
-          </span>
-        </span>
-      </span>
-    </div>
-  );
-}
-
-/**
- * Hover-only "Mark as done" CTA pill — matches Figma `Product_button` variant
- * (node 3169:25118): check-circle icon + "Mark as done" label, same shell as
- * `StartTaskButton`/`CheckInTaskButton` so it slots into `.home-task-card__label`.
- */
-function MarkAsDoneButton() {
-  return (
-    <div
-      className="home-task-card__label flex flex-col items-center justify-center shrink-0 overflow-hidden"
-      style={{
-        paddingLeft: '8px',
-        paddingRight: '8px',
-        paddingTop: '4px',
-        paddingBottom: '4px',
-        borderRadius: '8px',
-        border: '1px solid var(--alpha-light-100)',
-        background:
-          'linear-gradient(180deg, var(--color-neutral-50) 0%, #f5f5f5 100%)',
-      }}
-      aria-hidden
-    >
-      <span className="flex items-center">
-        <span
-          className="flex items-center justify-center shrink-0 overflow-hidden relative"
-          style={{ width: '20px', height: '20px' }}
-        >
-          <CheckCircleIcon color="var(--alpha-light-600)" />
-        </span>
-        <span
-          className="flex items-center justify-center"
-          style={{ paddingLeft: '4px', paddingRight: '4px' }}
-        >
-          <span
-            className="font-medium whitespace-nowrap"
-            style={{
-              fontFamily: 'var(--font-primary)',
-              fontSize: 'var(--body-3-size)',
-              lineHeight: 'var(--body-3-line)',
-              letterSpacing: 'var(--body-3-spacing)',
-              color: 'var(--alpha-light-600)',
-              textAlign: 'center',
-            }}
-          >
-            Mark as done
-          </span>
-        </span>
-      </span>
-    </div>
-  );
-}
-
-/**
- * Hover-only "Generate angles" CTA — matches Figma `Product_button` (node 3189:26409):
- * sparkle icon + label, same shell as `StartTaskButton`.
- */
-function GenerateAnglesButton() {
-  return (
-    <div
-      className="home-task-card__label flex flex-col items-center justify-center shrink-0 overflow-hidden"
-      style={{
-        paddingLeft: '8px',
-        paddingRight: '8px',
-        paddingTop: '4px',
-        paddingBottom: '4px',
-        borderRadius: '8px',
-        border: '1px solid var(--alpha-light-100)',
-        background:
-          'linear-gradient(180deg, var(--color-neutral-50) 0%, #f5f5f5 100%)',
-      }}
-      aria-hidden
-    >
-      <span className="flex items-center">
-        <span
-          className="flex items-center justify-center shrink-0 overflow-hidden relative"
-          style={{ width: '20px', height: '20px' }}
-        >
-          <SparkleNavIcon color="var(--alpha-light-600)" />
-        </span>
-        <span
-          className="flex items-center justify-center"
-          style={{ paddingLeft: '4px', paddingRight: '4px' }}
-        >
-          <span
-            className="font-medium whitespace-nowrap"
-            style={{
-              fontFamily: 'var(--font-primary)',
-              fontSize: 'var(--body-3-size)',
-              lineHeight: 'var(--body-3-line)',
-              letterSpacing: 'var(--body-3-spacing)',
-              color: 'var(--alpha-light-600)',
-              textAlign: 'center',
-            }}
-          >
-            Generate angles
-          </span>
-        </span>
-      </span>
-    </div>
-  );
-}
-
-/**
- * Hover-only "Start task" CTA pill — matches Figma node 3169:25118 (`Product_button`
- * variant with combo box: 20×20 icon slot + label container). Always rendered to
- * reserve the right-side slot and prevent layout shift, then fades in on row
- * hover/focus via the `.home-task-card__label` opacity transition.
- */
-/**
- * Mobile inline task action — `<icon (24×24)> + <label (16px)>` rendered flush
- * underneath the description (no pill chrome). Matches Figma node 3078:12145
- * ("Task action") and its variants used across the WL/Home mobile layout.
- *
- * Always visible on mobile (no hover-fade), unlike the desktop pill buttons.
- */
-function MobileInlineAction({
+function TaskInlineAction({
   icon,
   label,
 }: {
@@ -348,7 +116,7 @@ function MobileInlineAction({
 }) {
   return (
     <div
-      className="home-task-card__label home-task-card__action--mobile flex items-center"
+      className="home-task-card__label flex items-center"
       aria-hidden
       style={{ gap: '4px' }}
     >
@@ -362,9 +130,9 @@ function MobileInlineAction({
         className="font-medium whitespace-nowrap"
         style={{
           fontFamily: 'var(--font-primary)',
-          fontSize: '16px',
-          lineHeight: '24px',
-          letterSpacing: '-0.15px',
+          fontSize: 'var(--body-3-size)',
+          lineHeight: 'var(--body-3-line)',
+          letterSpacing: 'var(--body-3-spacing)',
           color: 'var(--alpha-light-600)',
         }}
       >
@@ -374,69 +142,26 @@ function MobileInlineAction({
   );
 }
 
-/** Returns the mobile inline action that matches the same task variant logic
- *  used by the desktop hover pills. */
-function getMobileAction(task: Task): React.ReactNode {
+/** Returns the inline action element matching the task variant. */
+function getTaskAction(task: Task): React.ReactNode {
+  // markAsDone done state: keep the same icon, swap label to "Undone"
+  if (task.markAsDone && task.done) {
+    return <TaskInlineAction icon={<MarkAsDoneIcon className="w-6 h-6" color="var(--alpha-light-600)" />} label="Undone" />;
+  }
+  // All other done states: pencil icon + "Edit"
   if (task.done) {
-    return <MobileInlineAction icon={<DocumentPenIcon className="w-6 h-6" color="var(--alpha-light-600)" />} label="Edit" />;
+    return <TaskInlineAction icon={<DocumentPenIcon className="w-6 h-6" color="var(--alpha-light-600)" />} label={task.actionLabel ?? 'Edit'} />;
   }
   if (task.checkIn) {
-    return <MobileInlineAction icon={<ChecklistIcon className="w-6 h-6" color="var(--alpha-light-600)" />} label="Check in" />;
+    return <TaskInlineAction icon={<ChecklistIcon className="w-6 h-6" color="var(--alpha-light-600)" />} label={task.actionLabel ?? 'Check in'} />;
   }
   if (task.markAsDone) {
-    return <MobileInlineAction icon={<DocumentPenIcon className="w-6 h-6" color="var(--alpha-light-600)" />} label="Mark as done" />;
+    return <TaskInlineAction icon={<MarkAsDoneIcon className="w-6 h-6" color="var(--alpha-light-600)" />} label={task.actionLabel ?? 'Mark as done'} />;
   }
   if (task.generateAngles) {
-    return <MobileInlineAction icon={<SparkleNavIcon className="w-6 h-6" color="var(--alpha-light-600)" />} label="Generate new angles" />;
+    return <TaskInlineAction icon={<SparkleNavIcon className="w-6 h-6" color="var(--alpha-light-600)" />} label={task.actionLabel ?? 'Generate new angles'} />;
   }
-  return <MobileInlineAction icon={<PlayIcon color="var(--alpha-light-600)" />} label="Start task" />;
-}
-
-function StartTaskButton() {
-  return (
-    <div
-      className="home-task-card__label flex flex-col items-center justify-center shrink-0 overflow-hidden"
-      style={{
-        paddingLeft: '8px',
-        paddingRight: '8px',
-        paddingTop: '4px',
-        paddingBottom: '4px',
-        borderRadius: '8px',
-        border: '1px solid var(--alpha-light-100)',
-        background:
-          'linear-gradient(180deg, var(--color-neutral-50) 0%, #f5f5f5 100%)',
-      }}
-      aria-hidden
-    >
-      <span className="flex items-center">
-        {/* Icon slot — 20×20 frame embedding 12×12 artwork, matches Figma "Search icon" */}
-        <span
-          className="flex items-center justify-center shrink-0 overflow-hidden relative"
-          style={{ width: '20px', height: '20px' }}
-        >
-          <PlayIcon color="var(--alpha-light-600)" />
-        </span>
-        <span
-          className="flex items-center justify-center"
-          style={{ paddingLeft: '4px', paddingRight: '4px' }}
-        >
-          <span
-            className="font-medium whitespace-nowrap"
-            style={{
-              fontFamily: 'var(--font-primary)',
-              fontSize: 'var(--body-3-size)',
-              lineHeight: 'var(--body-3-line)',
-              letterSpacing: 'var(--body-3-spacing)',
-              color: 'var(--alpha-light-600)',
-              textAlign: 'center',
-            }}
-          >
-            Start task
-          </span>
-        </span>
-      </span>
-    </div>
-  );
+  return <TaskInlineAction icon={<PlayIcon color="var(--alpha-light-600)" />} label={task.actionLabel ?? 'Start task'} />;
 }
 
 function OverdueTaskCard({
@@ -459,19 +184,16 @@ function OverdueTaskCard({
         className={`home-task-card home-task-card--overdue w-full text-left cursor-pointer${task.done ? ' home-task-card--done' : ''}`}
         style={{
           display: 'flex',
-          alignItems: 'center',
-          gap: '32px',
+          flexDirection: 'column',
+          alignItems: 'stretch',
+          gap: '12px',
           padding: '20px',
           borderRadius: '24px',
           backdropFilter: 'blur(10px)',
         }}
       >
-        {/* Task content — pill + description */}
-        <div
-          className="flex flex-col items-start min-w-0"
-          style={{ flex: '1 0 0', gap: '8px', maxWidth: '548px' }}
-        >
-          {/* Date pill — matches Figma 16×16 icon frame embedding 12×12.8 calendar artwork */}
+        {/* Date pill + description */}
+        <div className="flex flex-col items-start" style={{ gap: '8px' }}>
           <div
             className="flex items-center"
             style={{
@@ -484,10 +206,7 @@ function OverdueTaskCard({
               background: 'var(--color-red-50)',
             }}
           >
-            <span
-              className="flex items-center justify-center shrink-0"
-              style={{ width: '16px', height: '16px' }}
-            >
+            <span className="flex items-center justify-center shrink-0" style={{ width: '16px', height: '16px' }}>
               <CalendarIcon color="var(--color-red-900)" />
             </span>
             <span
@@ -503,8 +222,6 @@ function OverdueTaskCard({
               {task.dueLabel}
             </span>
           </div>
-
-          {/* Description */}
           <p
             className="home-task-card__text font-medium"
             style={{
@@ -519,31 +236,8 @@ function OverdueTaskCard({
           </p>
         </div>
 
-        <div className="home-task-card__cta-slot">
-          {/* Desktop hover-pill action — hidden on mobile */}
-          <div className="hidden md:flex">
-            {task.done ? (
-              task.checkIn ? (
-                <EditTaskButton />
-              ) : task.markAsDone ? (
-                <UndoMarkDoneButton />
-              ) : (
-                <EditTaskButton />
-              )
-            ) : task.checkIn ? (
-              <CheckInTaskButton />
-            ) : task.markAsDone ? (
-              <MarkAsDoneButton />
-            ) : task.generateAngles ? (
-              <GenerateAnglesButton />
-            ) : (
-              <StartTaskButton />
-            )}
-          </div>
-
-          {/* Mobile inline action — visible only below the `md` breakpoint */}
-          <div className="flex md:hidden">{getMobileAction(task)}</div>
-        </div>
+        {/* Inline action — always visible */}
+        {getTaskAction(task)}
       </button>
     </div>
   );
@@ -569,18 +263,17 @@ function TodayTaskCard({
         className={`home-task-card w-full text-left cursor-pointer${task.done ? ' home-task-card--done' : ''}`}
         style={{
           display: 'flex',
-          alignItems: 'center',
-          gap: '32px',
+          flexDirection: 'column',
+          alignItems: 'stretch',
+          gap: '12px',
           padding: '20px',
           borderRadius: '24px',
           backdropFilter: 'blur(10px)',
         }}
       >
         <p
-          className="home-task-card__text font-medium min-w-0"
+          className="home-task-card__text font-medium"
           style={{
-            flex: '1 0 0',
-            maxWidth: '548px',
             fontFamily: 'var(--font-primary)',
             fontSize: 'var(--body-3-size)',
             lineHeight: 'var(--body-3-line)',
@@ -591,31 +284,8 @@ function TodayTaskCard({
           {task.description}
         </p>
 
-        <div className="home-task-card__cta-slot">
-          {/* Desktop hover-pill action — hidden on mobile */}
-          <div className="hidden md:flex">
-            {task.done ? (
-              task.checkIn ? (
-                <EditTaskButton />
-              ) : task.markAsDone ? (
-                <UndoMarkDoneButton />
-              ) : (
-                <EditTaskButton />
-              )
-            ) : task.checkIn ? (
-              <CheckInTaskButton />
-            ) : task.markAsDone ? (
-              <MarkAsDoneButton />
-            ) : task.generateAngles ? (
-              <GenerateAnglesButton />
-            ) : (
-              <StartTaskButton />
-            )}
-          </div>
-
-          {/* Mobile inline action — visible only below the `md` breakpoint */}
-          <div className="flex md:hidden">{getMobileAction(task)}</div>
-        </div>
+        {/* Inline action — always visible */}
+        {getTaskAction(task)}
       </button>
     </div>
   );

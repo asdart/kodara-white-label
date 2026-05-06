@@ -63,8 +63,8 @@ export default function TaskDetailsBar({ title, visible, onMarkDone }: TaskDetai
             paddingTop: '4px',
             paddingBottom: '4px',
             borderRadius: '999px',
-            background: 'var(--surface-primary)',
-            border: '1px solid var(--alpha-light-100)',
+            background: 'var(--btn-gradient)',
+            border: 'none',
             cursor: 'pointer',
           }}
         >
@@ -72,7 +72,7 @@ export default function TaskDetailsBar({ title, visible, onMarkDone }: TaskDetai
             className="flex items-center justify-center shrink-0"
             style={{ width: '20px', height: '20px' }}
           >
-            <CheckCircleIcon color="var(--alpha-light-600)" />
+            <CheckCircleIcon color="white" />
           </span>
           <span
             className="font-medium whitespace-nowrap"
@@ -81,7 +81,7 @@ export default function TaskDetailsBar({ title, visible, onMarkDone }: TaskDetai
               fontSize: 'var(--body-3-size)',
               lineHeight: 'var(--body-3-line)',
               letterSpacing: 'var(--body-3-spacing)',
-              color: 'var(--alpha-light-600)',
+              color: 'white',
             }}
           >
             Mark as done
