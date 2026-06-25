@@ -943,7 +943,9 @@ input, button, select, textarea, [contenteditable] {
 }
 
 .shiny-card > .home-task-card {
-  background: var(--color-white) !important;
+  background:
+    linear-gradient(rgba(16, 104, 68, 0.08), rgba(16, 104, 68, 0.08)),
+    var(--surface-primary) !important;
 }
 
 .home-task-card.home-task-card--highlighted {
