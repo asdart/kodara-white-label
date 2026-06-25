@@ -1036,19 +1036,25 @@ input, button, select, textarea, [contenteditable] {
   animation: spotlight-overlay-in 220ms ease forwards;
 }
 
-.overlay-spotlight__scrim {
-  position: absolute;
-  inset: 0;
+/* Blur panels rendered as top-level fixed elements so the opacity
+ * animation never wraps them in an isolated compositing layer. */
+.overlay-panel {
+  position: fixed;
+  z-index: 60;
+  pointer-events: auto;
   background: var(--surface-overlay);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  animation: spotlight-overlay-in 220ms ease forwards;
 }
+
 
 /* Animated green ring — reuses the shiny-card conic gradient, drawn as a
  * 2px frame via the mask-composite "gradient border" trick so the card shows
  * through the transparent centre. */
 .overlay-spotlight__ring {
-  position: absolute;
+  position: fixed;
+  z-index: 61;
   border-radius: 30px;
   padding: 2px;
   background: conic-gradient(
@@ -1066,7 +1072,8 @@ input, button, select, textarea, [contenteditable] {
 }
 
 .overlay-spotlight__tooltip {
-  position: absolute;
+  position: fixed;
+  z-index: 62;
   display: flex;
   flex-direction: column;
   align-items: center;

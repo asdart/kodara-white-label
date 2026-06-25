@@ -841,37 +841,33 @@ function OverlayBorderHighlight({
   if (!rect) return null;
 
   const gap = 8;
-  const r = 30;
   const x = rect.left - gap;
   const y = rect.top - gap;
   const w = rect.width + gap * 2;
   const h = rect.height + gap * 2;
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
 
-  // Full-viewport rect with a rounded-rectangle hole (evenodd punches it out).
-  const holePath =
-    `M0 0 H${vw} V${vh} H0 Z ` +
-    `M${x + r} ${y} H${x + w - r} ` +
-    `A${r} ${r} 0 0 1 ${x + w} ${y + r} ` +
-    `V${y + h - r} ` +
-    `A${r} ${r} 0 0 1 ${x + w - r} ${y + h} ` +
-    `H${x + r} ` +
-    `A${r} ${r} 0 0 1 ${x} ${y + h - r} ` +
-    `V${y + r} ` +
-    `A${r} ${r} 0 0 1 ${x + r} ${y} Z`;
-  const clip = `path(evenodd, "${holePath}")`;
-
+  // Panels are rendered as top-level fixed elements (not wrapped in an
+  // opacity-animated container) so that backdrop-filter is never trapped
+  // inside an isolated compositing layer.
   return (
-    <div className="overlay-spotlight" aria-hidden="true">
+    <>
+      {/* Top */}
+      <div aria-hidden className="overlay-panel" style={{ top: 0, left: 0, right: 0, height: y }} />
+      {/* Bottom */}
+      <div aria-hidden className="overlay-panel" style={{ top: y + h, left: 0, right: 0, bottom: 0 }} />
+      {/* Left */}
+      <div aria-hidden className="overlay-panel" style={{ top: y, left: 0, width: x, height: h }} />
+      {/* Right */}
+      <div aria-hidden className="overlay-panel" style={{ top: y, left: x + w, right: 0, height: h }} />
+
+      {/* Animated border ring */}
       <div
-        className="overlay-spotlight__scrim"
-        style={{ clipPath: clip, WebkitClipPath: clip }}
-      />
-      <div
+        aria-hidden
         className="overlay-spotlight__ring"
         style={{ top: y, left: x, width: w, height: h }}
       />
+
+      {/* Tooltip */}
       <div
         className="overlay-spotlight__tooltip"
         style={{ top: y + h + 12, left: x + w / 2 }}
@@ -881,7 +877,7 @@ function OverlayBorderHighlight({
           Click on your first task
         </span>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -1053,11 +1049,6 @@ export default function HomePage({
           </span>
         </div>
 
-        {/* A/B test control — switch the "Start here" highlight style */}
-        <HighlightVersionSelect
-          value={highlightVersion}
-          onChange={setHighlightVersion}
-        />
       </div>
 
       {/* Scrollable content area — `min-h-full` wrapper with flex centers vertically when
@@ -1163,7 +1154,7 @@ export default function HomePage({
                   </button>
                 )}
               </div>
-              <div className="flex flex-col w-full" style={{ gap: '6px' }}>
+              <div className="flex flex-col w-full" style={{ gap: '8px' }}>
                 {displayTasks.map((task, i) => (
                   <TodayTaskCard
                     key={task.id}
@@ -1209,6 +1200,21 @@ export default function HomePage({
         }}
       >
         <MobileBottomChatBar onClick={onCollapsedInputClick} />
+      </div>
+
+      {/* A/B test control — floating, always above overlays */}
+      <div
+        style={{
+          position: 'fixed',
+          top: '16px',
+          right: '16px',
+          zIndex: 63,
+        }}
+      >
+        <HighlightVersionSelect
+          value={highlightVersion}
+          onChange={setHighlightVersion}
+        />
       </div>
 
       {highlightVersion === 'spotlight' && (
