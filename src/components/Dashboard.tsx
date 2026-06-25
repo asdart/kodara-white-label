@@ -15,6 +15,7 @@ import { PenSparkleIcon, AppleIcon, CheckCircleIcon } from './Icons';
 import glowSvg from '../assets/ellipse-glow.svg';
 import ringSvg from '../assets/ellipse-border.svg';
 import crescentSvg from '../assets/figma-export/d251448fe157d8c297e9697d264bb33fa3827e0c.svg';
+import homeBgBottom from '../assets/home-bg-bottom.svg';
 
 function SuccessToast({ closing, onDismiss }: { closing: boolean; onDismiss: () => void }) {
   return (
@@ -150,15 +151,23 @@ export default function Dashboard() {
       className="flex items-start w-full h-full md:rounded-3xl overflow-hidden relative"
       style={{ background: 'var(--surface-primary)', transition: 'background 300ms ease' }}
     >
-      {/* Background gradient behind main content */}
+      {/* Decorative background — Figma node 3983:11808, covers full container including sidebar */}
       <div
-        className="static pointer-events-none"
-        style={{
-          right: '-200px',
-          bottom: '-200px',
-          background: 'radial-gradient(ellipse at 50% 30%, rgba(0,190,220,0.06) 0%, rgba(0,190,220,0.02) 40%, transparent 70%)',
-        }}
-      />
+        className="absolute pointer-events-none overflow-hidden"
+        style={{ bottom: 0, left: '-7.03%', right: '-7.03%', height: '400px' }}
+      >
+        <img
+          alt=""
+          src={homeBgBottom}
+          style={{
+            position: 'absolute',
+            inset: '-28.85% 0',
+            width: '100%',
+            height: '157.7%',
+            objectFit: 'cover',
+          }}
+        />
+      </div>
 
       {/* Sidebar */}
       <Sidebar

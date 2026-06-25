@@ -40,6 +40,9 @@
 
   /* Alpha / Brand (base #106840) */
   --alpha-brand-50: rgba(16, 104, 68, 0.06);
+  --alpha-brand-100: rgba(16, 104, 68, 0.08);
+  --alpha-brand-500: rgba(16, 104, 68, 0.48);
+  --alpha-brand-700: rgba(16, 104, 68, 0.7);
   --alpha-brand-950: rgba(16, 104, 68, 0.92);
 
   /* Red — matches Figma red/{50,100,200,900} */
@@ -140,6 +143,9 @@
   --alpha-pelorous-200: rgba(0, 175, 208, 0.25);
 
   --alpha-brand-50: rgba(52, 211, 153, 0.10);
+  --alpha-brand-100: rgba(52, 211, 153, 0.12);
+  --alpha-brand-500: rgba(52, 211, 153, 0.48);
+  --alpha-brand-700: rgba(52, 211, 153, 0.7);
   --alpha-brand-950: rgba(52, 211, 153, 0.92);
 
   --color-red-50: rgba(220, 38, 38, 0.10);
@@ -558,7 +564,7 @@ input, button, select, textarea, [contenteditable] {
 
 .sidebar-nav-item.active:hover {
   --nav-item-color: var(--alpha-light-900);
-  background: rgba(0, 175, 208, 0.08) !important;
+  background: var(--alpha-light-25) !important;
 }
 
 /* ── Connector card (base + hover; must be in CSS so hover can override) ── */
@@ -906,6 +912,53 @@ input, button, select, textarea, [contenteditable] {
 
 .home-task-card.home-task-card--overdue {
   --home-task-card-border: var(--color-red-100);
+}
+
+/* Highlighted "Start here" card — brand-green 2px border, subtle gradient wash
+ * and brand glow (Figma node 3976:11924 "Upcoming task - Highlighted"). */
+/* Shiny rotating border — @property enables smooth CSS-only animation of the
+ * conic-gradient angle. The interior gradient is preserved via padding-box layers. */
+@property --gradient-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes gradient-angle {
+  to { --gradient-angle: 360deg; }
+}
+
+/* Wrapper div that produces the animated shiny border via 1px padding + conic-gradient.
+ * The inner .home-task-card keeps its own 1px solid border so both effects are visible. */
+.shiny-card {
+  padding: 1px;
+  border-radius: 25px;
+  background: conic-gradient(
+    from var(--gradient-angle),
+    transparent 25%,
+    #106844 50%,
+    transparent 75%
+  );
+  animation: gradient-angle 3s linear infinite;
+}
+
+.shiny-card > .home-task-card {
+  background: var(--color-white) !important;
+}
+
+.home-task-card.home-task-card--highlighted {
+  --home-task-card-border: var(--alpha-brand-500);
+}
+
+.home-task-card.home-task-card--highlighted:hover,
+.home-task-card.home-task-card--highlighted:focus-visible {
+  --home-task-card-border: var(--alpha-brand-500);
+}
+
+/* "Start here" pill badge above the highlighted task text. */
+.home-task-card .home-task-card__badge {
+  background: var(--alpha-brand-700);
+  box-shadow: 0px 2px 6px 0px rgba(0, 0, 0, 0.1);
 }
 
 .home-task-card .home-task-card__text {

@@ -43,11 +43,20 @@ interface Task {
   checkInValue?: string;
   /** Override the default action label for this task type. */
   actionLabel?: string;
+  /** When true, renders the brand-highlighted "Start here" card (Figma node 3976:11924). */
+  highlighted?: boolean;
 }
 
 interface OverdueTask extends Task {
   dueLabel: string;
 }
+
+/**
+ * Overdue tasks are no longer surfaced on Home per the updated dashboard design
+ * (Figma node 3976:11697). The data + card component are kept intact so the
+ * section can be re-enabled by flipping this flag.
+ */
+const SHOW_OVERDUE = false;
 
 const OVERDUE_TASKS: OverdueTask[] = [
   {
@@ -63,6 +72,7 @@ const INITIAL_TODAY_TASKS: Task[] = [
     id: 'today-1',
     description: "Daily check-in - What is your today\u2019s revenue?",
     checkIn: true,
+    highlighted: true,
   },
   {
     id: 'today-2',
@@ -74,7 +84,8 @@ const INITIAL_TODAY_TASKS: Task[] = [
     id: 'today-3',
     description:
       'Launch first batch of 4-6 new ad creatives in one ad set per platform with broad targeting',
-    markAsDone: true,
+    generateAngles: true,
+    actionLabel: 'Find weak spots',
   },
 ];
 
@@ -133,7 +144,7 @@ function TaskInlineAction({
           fontSize: 'var(--body-3-size)',
           lineHeight: 'var(--body-3-line)',
           letterSpacing: 'var(--body-3-spacing)',
-          color: 'var(--alpha-light-600)',
+          color: 'var(--alpha-brand-700)',
         }}
       >
         {label}
@@ -146,22 +157,22 @@ function TaskInlineAction({
 function getTaskAction(task: Task): React.ReactNode {
   // markAsDone done state: keep the same icon, swap label to "Undone"
   if (task.markAsDone && task.done) {
-    return <TaskInlineAction icon={<MarkAsDoneIcon className="w-6 h-6" color="var(--alpha-light-600)" />} label="Undone" />;
+    return <TaskInlineAction icon={<MarkAsDoneIcon className="w-6 h-6" color="var(--alpha-brand-700)" />} label="Undone" />;
   }
   // All other done states: pencil icon + "Edit"
   if (task.done) {
-    return <TaskInlineAction icon={<DocumentPenIcon className="w-6 h-6" color="var(--alpha-light-600)" />} label={task.actionLabel ?? 'Edit'} />;
+    return <TaskInlineAction icon={<DocumentPenIcon className="w-6 h-6" color="var(--alpha-brand-700)" />} label={task.actionLabel ?? 'Edit'} />;
   }
   if (task.checkIn) {
-    return <TaskInlineAction icon={<ChecklistIcon className="w-6 h-6" color="var(--alpha-light-600)" />} label={task.actionLabel ?? 'Check in'} />;
+    return <TaskInlineAction icon={<ChecklistIcon className="w-6 h-6" color="var(--alpha-brand-700)" />} label={task.actionLabel ?? 'Check in'} />;
   }
   if (task.markAsDone) {
-    return <TaskInlineAction icon={<MarkAsDoneIcon className="w-6 h-6" color="var(--alpha-light-600)" />} label={task.actionLabel ?? 'Mark as done'} />;
+    return <TaskInlineAction icon={<MarkAsDoneIcon className="w-6 h-6" color="var(--alpha-brand-700)" />} label={task.actionLabel ?? 'Mark as done'} />;
   }
   if (task.generateAngles) {
-    return <TaskInlineAction icon={<SparkleNavIcon className="w-6 h-6" color="var(--alpha-light-600)" />} label={task.actionLabel ?? 'Generate new angles'} />;
+    return <TaskInlineAction icon={<SparkleNavIcon className="w-6 h-6" color="var(--alpha-brand-700)" />} label={task.actionLabel ?? 'Generate new angles'} />;
   }
-  return <TaskInlineAction icon={<PlayIcon color="var(--alpha-light-600)" />} label={task.actionLabel ?? 'Start task'} />;
+  return <TaskInlineAction icon={<PlayIcon color="var(--alpha-brand-700)" />} label={task.actionLabel ?? 'Start task'} />;
 }
 
 function OverdueTaskCard({
@@ -257,6 +268,7 @@ function TodayTaskCard({
       className="chat-card-enter w-full"
       style={{ animationDelay: `${animationDelay}ms` }}
     >
+      <div className={task.highlighted ? 'shiny-card' : undefined}>
       <button
         type="button"
         onClick={onClick}
@@ -271,6 +283,22 @@ function TodayTaskCard({
           backdropFilter: 'blur(10px)',
         }}
       >
+        {task.highlighted && (
+          <span
+            className="home-task-card__badge inline-flex items-center self-start font-medium whitespace-nowrap"
+            style={{
+              padding: '4px 10px',
+              borderRadius: '8px',
+              fontFamily: 'var(--font-primary)',
+              fontSize: '12px',
+              lineHeight: 'normal',
+              color: 'var(--color-white)',
+            }}
+          >
+            Start here
+          </span>
+        )}
+
         <p
           className="home-task-card__text font-medium"
           style={{
@@ -287,6 +315,7 @@ function TodayTaskCard({
         {/* Inline action — always visible */}
         {getTaskAction(task)}
       </button>
+      </div>
     </div>
   );
 }
@@ -789,19 +818,6 @@ export default function HomePage({
         </div>
       </div>
 
-      {/* Soft background glow — matches the Figma decorative background */}
-      <div
-        className="absolute pointer-events-none"
-        style={{
-          top: '0',
-          right: '-200px',
-          left: '-200px',
-          height: '800px',
-          background:
-            'radial-gradient(ellipse at 50% 30%, rgba(0,175,208,0.05) 0%, rgba(183,241,255,0.03) 35%, transparent 70%)',
-        }}
-      />
-
       {/* Scrollable content area — `min-h-full` wrapper with flex centers vertically when
           content is short, and naturally grows to allow scrolling when content overflows. */}
       <div
@@ -851,12 +867,12 @@ export default function HomePage({
                   margin: 0,
                 }}
               >
-                You have {remainingCount} {remainingCount === 1 ? 'task' : 'tasks'} to be done today and {OVERDUE_TASKS.length === 1 ? '1 overdue' : `${OVERDUE_TASKS.length} overdue`}.
+                You have {remainingCount} {remainingCount === 1 ? 'task' : 'tasks'} to be done today.
               </p>
             </div>
 
-            {/* Overdue */}
-            {OVERDUE_TASKS.length > 0 && (
+            {/* Overdue — hidden on Home per updated design; toggle SHOW_OVERDUE to restore. */}
+            {SHOW_OVERDUE && OVERDUE_TASKS.length > 0 && (
               <section
                 className="chat-card-enter flex flex-col items-start w-full"
                 style={{ gap: '8px', animationDelay: '60ms' }}
@@ -895,7 +911,7 @@ export default function HomePage({
                       fontSize: 'var(--body-3-size)',
                       lineHeight: 'var(--body-3-line)',
                       letterSpacing: 'var(--body-3-spacing)',
-                      color: 'var(--color-pelorous-600)',
+                      color: 'var(--alpha-brand-950)',
                       background: 'none',
                       border: 'none',
                       padding: 0,

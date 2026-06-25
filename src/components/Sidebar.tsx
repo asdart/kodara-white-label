@@ -34,6 +34,9 @@ const navItems: { key: SidebarPage; label: string; icon: typeof PenSparkleIcon; 
   { key: 'plan', label: 'Plan', icon: BookIcon, activeWhen: ['plan'] },
 ];
 
+const SIDEBAR_TRANSITION = 'width 280ms cubic-bezier(0.4, 0, 0.2, 1), padding 280ms cubic-bezier(0.4, 0, 0.2, 1)';
+const LABEL_TRANSITION = 'opacity 180ms ease, max-width 280ms cubic-bezier(0.4, 0, 0.2, 1)';
+
 export default function Sidebar({
   currentPage = 'home',
   onNavigate,
@@ -52,7 +55,7 @@ export default function Sidebar({
         paddingTop: '8px',
         paddingBottom: '8px',
         background: 'var(--surface-primary)',
-        transition: 'background 300ms ease',
+        transition: `${SIDEBAR_TRANSITION}, background 300ms ease`,
       }}
     >
       <div
@@ -61,71 +64,76 @@ export default function Sidebar({
           width: '100%',
           minWidth: 0,
           borderRadius: '16px',
-          background: 'var(--surface-sidebar)',
+          background: 'var(--alpha-dark-600)',
+          border: '1px solid var(--alpha-light-100)',
           backdropFilter: 'blur(6px)',
           gap: '1px',
         }}
       >
-        {/* Header — avatar + name + collapse button */}
+        {/* Header — avatar + name (left) with collapse toggle (right), single row */}
         <div
-          className="flex flex-col items-start shrink-0 w-full sidebar-inner"
+          className="flex items-center shrink-0 w-full sidebar-inner"
           style={{
-            paddingLeft: '12px',
-            paddingRight: collapsed ? '12px' : '16px',
+            paddingLeft: collapsed ? '12px' : '16px',
+            paddingRight: '12px',
             paddingTop: '20px',
             paddingBottom: '12px',
-            gap: '0px',
+            gap: '6px',
+            transition: SIDEBAR_TRANSITION,
           }}
         >
+          {/* Avatar + label — shrinks to 0 when collapsed so the toggle button
+              naturally slides left to align with nav icons below */}
           <div
-            className="flex items-center overflow-hidden w-full"
-            style={{ justifyContent: collapsed ? 'center' : 'space-between' }}
+            className="flex items-center overflow-hidden"
+            style={{
+              flex: '1 1 0',
+              minWidth: 0,
+              maxWidth: collapsed ? '0px' : '200px',
+              opacity: collapsed ? 0 : 1,
+              gap: '6px',
+              transition: LABEL_TRANSITION,
+            }}
           >
-            {!collapsed && (
-              <div className="sidebar-label" style={{ paddingLeft: '4px', paddingRight: '8px' }}>
-                <div className="flex items-center" style={{ gap: '6px' }}>
-                  <div
-                    className="shrink-0 overflow-hidden"
-                    style={{
-                      width: '20px',
-                      height: '20px',
-                      borderRadius: 'var(--radius-full)',
-                      background: 'linear-gradient(135deg, #0ea5e9, #06b6d4)',
-                    }}
-                  />
-                  <span
-                    className="font-medium whitespace-nowrap sidebar-label"
-                    style={{
-                      fontFamily: 'var(--font-primary)',
-                      fontSize: 'var(--body-3-size)',
-                      lineHeight: 'var(--body-3-line)',
-                      letterSpacing: 'var(--body-3-spacing)',
-                      color: 'var(--alpha-light-600)',
-                    }}
-                  >
-                    User_name
-                  </span>
-                </div>
-              </div>
-            )}
-
-            <button
-              className="flex items-center justify-center shrink-0 hover:opacity-70 transition-opacity"
+            <div
+              className="shrink-0"
               style={{
                 width: '20px',
                 height: '20px',
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                transform: collapsed ? 'rotate(180deg)' : 'none',
-                transition: 'transform 0.25s ease',
+                borderRadius: 'var(--radius-full)',
+                background: 'linear-gradient(135deg, #0ea5e9, #06b6d4)',
               }}
-              onClick={onToggleCollapse}
-              title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            />
+            <span
+              className="font-medium whitespace-nowrap truncate sidebar-label"
+              style={{
+                fontFamily: 'var(--font-primary)',
+                fontSize: 'var(--body-3-size)',
+                lineHeight: 'var(--body-3-line)',
+                letterSpacing: 'var(--body-3-spacing)',
+                color: 'var(--alpha-light-600)',
+              }}
             >
-              <SidebarCollapseIcon className="w-5 h-5" color="var(--alpha-light-600)" />
-            </button>
+              Agent _name
+            </span>
           </div>
+
+          <button
+            className="flex items-center justify-center shrink-0 hover:opacity-70 transition-opacity"
+            style={{
+              width: '20px',
+              height: '20px',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              transform: collapsed ? 'rotate(180deg)' : 'none',
+              transition: 'transform 280ms cubic-bezier(0.4, 0, 0.2, 1), opacity 150ms ease',
+            }}
+            onClick={onToggleCollapse}
+            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            <SidebarCollapseIcon className="w-5 h-5" color="var(--alpha-light-600)" />
+          </button>
         </div>
 
         {/* Navigation items */}
@@ -140,10 +148,15 @@ export default function Sidebar({
               <div
                 key={item.key}
                 className="flex items-center w-full min-w-0 sidebar-nav-row"
-                style={{ height: '32px', paddingLeft: collapsed ? '4px' : '8px', paddingRight: '8px' }}
+                style={{
+                  height: '32px',
+                  paddingLeft: collapsed ? '4px' : '8px',
+                  paddingRight: '8px',
+                  transition: SIDEBAR_TRANSITION,
+                }}
               >
                 <div
-                  className={`sidebar-nav-item flex items-center h-full cursor-pointer${isActive ? ' active' : ''}`}
+                  className={`sidebar-nav-item flex items-center h-full w-full cursor-pointer${isActive ? ' active' : ''}`}
                   style={{
                     gap: '6px',
                     paddingLeft: '8px',
@@ -151,31 +164,29 @@ export default function Sidebar({
                     paddingTop: '8px',
                     paddingBottom: '8px',
                     borderRadius: '8px',
-                    background: isActive ? 'rgba(0, 175, 208, 0.08)' : undefined,
-                    width: collapsed ? 'auto' : '100%',
-                    justifyContent: collapsed ? 'center' : undefined,
+                    background: isActive ? 'var(--alpha-light-25)' : undefined,
                     position: 'relative',
                   }}
                   onClick={() => onNavigate?.(item.key)}
                   title={item.label}
                 >
                   <Icon className="w-5 h-5 shrink-0" color="var(--nav-item-color)" />
-                  {!collapsed && (
-                    <span
-                      className="font-medium truncate flex-1 min-w-0 overflow-hidden sidebar-label"
-                      style={{
-                        fontFamily: 'var(--font-primary)',
-                        fontSize: 'var(--body-3-size)',
-                        lineHeight: 'var(--body-3-line)',
-                        letterSpacing: 'var(--body-3-spacing)',
-                        color: 'var(--nav-item-color)',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {item.label}
-                    </span>
-                  )}
+                  <span
+                    className="font-medium whitespace-nowrap sidebar-label"
+                    style={{
+                      fontFamily: 'var(--font-primary)',
+                      fontSize: 'var(--body-3-size)',
+                      lineHeight: 'var(--body-3-line)',
+                      letterSpacing: 'var(--body-3-spacing)',
+                      color: 'var(--nav-item-color)',
+                      maxWidth: collapsed ? '0px' : '160px',
+                      opacity: collapsed ? 0 : 1,
+                      overflow: 'hidden',
+                      transition: LABEL_TRANSITION,
+                    }}
+                  >
+                    {item.label}
+                  </span>
                 </div>
               </div>
             );
@@ -185,17 +196,19 @@ export default function Sidebar({
         {/* Settings - bottom */}
         <div
           className="absolute bottom-0 left-0 right-0 flex items-center justify-between min-w-0"
-          style={{
-            paddingBottom: '12px',
-            paddingTop: '8px',
-          }}
+          style={{ paddingBottom: '12px', paddingTop: '8px' }}
         >
           <div
             className="flex items-center w-full min-w-0 sidebar-nav-row"
-            style={{ height: '32px', paddingLeft: collapsed ? '4px' : '8px', paddingRight: '8px' }}
+            style={{
+              height: '32px',
+              paddingLeft: collapsed ? '4px' : '8px',
+              paddingRight: '8px',
+              transition: SIDEBAR_TRANSITION,
+            }}
           >
             <div
-              className="sidebar-nav-item flex items-center h-full cursor-pointer"
+              className="sidebar-nav-item flex items-center h-full w-full cursor-pointer"
               style={{
                 gap: '6px',
                 paddingLeft: '8px',
@@ -203,29 +216,27 @@ export default function Sidebar({
                 paddingTop: '8px',
                 paddingBottom: '8px',
                 borderRadius: '8px',
-                width: collapsed ? 'auto' : '100%',
-                justifyContent: collapsed ? 'center' : undefined,
               }}
               title="Settings"
               onClick={onSettingsClick}
             >
               <SettingsIcon className="w-5 h-5 shrink-0" color="var(--nav-item-color)" />
-              {!collapsed && (
-                <span
-                  className="font-medium truncate flex-1 min-w-0 overflow-hidden sidebar-label"
-                  style={{
-                    fontFamily: 'var(--font-primary)',
-                    fontSize: 'var(--body-3-size)',
-                    lineHeight: 'var(--body-3-line)',
-                    letterSpacing: 'var(--body-3-spacing)',
-                    color: 'var(--nav-item-color)',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  Settings
-                </span>
-              )}
+              <span
+                className="font-medium whitespace-nowrap sidebar-label"
+                style={{
+                  fontFamily: 'var(--font-primary)',
+                  fontSize: 'var(--body-3-size)',
+                  lineHeight: 'var(--body-3-line)',
+                  letterSpacing: 'var(--body-3-spacing)',
+                  color: 'var(--nav-item-color)',
+                  maxWidth: collapsed ? '0px' : '160px',
+                  opacity: collapsed ? 0 : 1,
+                  overflow: 'hidden',
+                  transition: LABEL_TRANSITION,
+                }}
+              >
+                Settings
+              </span>
             </div>
           </div>
         </div>
