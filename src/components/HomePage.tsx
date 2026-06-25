@@ -52,6 +52,18 @@ interface OverdueTask extends Task {
 }
 
 /**
+ * A/B test toggle for how the first ("Start here") task is highlighted:
+ *  - `border`    → animated shiny conic-gradient border (current default)
+ *  - `spotlight` → dimmed (dark) full-screen overlay with a cut-out + callout
+ *  - `overlay`   → light blurred scrim with a cut-out, animated border ring,
+ *                  and a tooltip (Figma node 4063:11992)
+ *  - `guide`     → animated border on the card + a guide tooltip that loads in
+ *                  after the page settles (Figma node 4063:12178)
+ *  - `none`      → no special highlight
+ */
+type HighlightVersion = 'border' | 'spotlight' | 'overlay' | 'guide' | 'none';
+
+/**
  * Overdue tasks are no longer surfaced on Home per the updated dashboard design
  * (Figma node 3976:11697). The data + card component are kept intact so the
  * section can be re-enabled by flipping this flag.
@@ -258,17 +270,24 @@ function TodayTaskCard({
   task,
   animationDelay,
   onClick,
+  highlightVariant = 'border',
+  cardRef,
 }: {
   task: Task;
   animationDelay: number;
   onClick?: () => void;
+  highlightVariant?: HighlightVersion;
+  cardRef?: React.Ref<HTMLDivElement>;
 }) {
+  const showShinyBorder =
+    task.highlighted &&
+    (highlightVariant === 'border' || highlightVariant === 'guide');
   return (
     <div
       className="chat-card-enter w-full"
       style={{ animationDelay: `${animationDelay}ms` }}
     >
-      <div className={task.highlighted ? 'shiny-card' : undefined}>
+      <div ref={cardRef} className={showShinyBorder ? 'shiny-card' : undefined}>
       <button
         type="button"
         onClick={onClick}
@@ -705,6 +724,221 @@ function CheckInModal({
   );
 }
 
+/**
+ * A/B test control — lets the user switch how the "Start here" card is
+ * highlighted so we can compare which version performs best. Rendered in the
+ * top-right of the Home top bar.
+ */
+function HighlightVersionSelect({
+  value,
+  onChange,
+}: {
+  value: HighlightVersion;
+  onChange: (v: HighlightVersion) => void;
+}) {
+  return (
+    <select
+      aria-label="Highlight style"
+      value={value}
+      onChange={(e) => onChange(e.target.value as HighlightVersion)}
+      className="cursor-pointer"
+      style={{
+        fontFamily: 'var(--font-primary)',
+        fontSize: 'var(--body-3-size)',
+        lineHeight: 'var(--body-3-line)',
+        letterSpacing: 'var(--body-3-spacing)',
+        color: 'var(--alpha-light-900)',
+        background: 'var(--color-white)',
+        border: '1px solid var(--alpha-light-100)',
+        borderRadius: '10px',
+        padding: '6px 10px',
+        boxShadow: '0px 1px 2px 0px rgba(0,0,0,0.04)',
+      }}
+    >
+      <option value="border">Border animation</option>
+      <option value="spotlight">Spotlight overlay</option>
+      <option value="overlay">Light overlay + border</option>
+      <option value="guide">Border + guide tooltip</option>
+      <option value="none">No highlight</option>
+    </select>
+  );
+}
+
+/**
+ * Tracks a target element's viewport rect with a rAF loop, re-rendering only
+ * when the rect actually changes. Keeps overlays glued to the target through
+ * the card entrance animation, scrolling, and window resizes.
+ */
+function useTrackedRect(targetRef: React.RefObject<HTMLElement | null>) {
+  const [rect, setRect] = useState<DOMRect | null>(null);
+
+  useEffect(() => {
+    let raf = 0;
+    let prevKey = '';
+    const tick = () => {
+      const el = targetRef.current;
+      if (el) {
+        const r = el.getBoundingClientRect();
+        const key = `${r.top}|${r.left}|${r.width}|${r.height}`;
+        if (key !== prevKey) {
+          prevKey = key;
+          setRect(r);
+        }
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [targetRef]);
+
+  return rect;
+}
+
+/**
+ * Spotlight highlight — dims the whole screen except a cut-out around the
+ * target card and points to it with a bouncing "Click and start here" callout.
+ */
+function SpotlightHighlight({
+  targetRef,
+}: {
+  targetRef: React.RefObject<HTMLDivElement | null>;
+}) {
+  const rect = useTrackedRect(targetRef);
+  if (!rect) return null;
+
+  const pad = 6;
+  const top = rect.top - pad;
+  const left = rect.left - pad;
+  const width = rect.width + pad * 2;
+  const height = rect.height + pad * 2;
+
+  return (
+    <div className="spotlight-overlay" aria-hidden="true">
+      <div className="spotlight-hole" style={{ top, left, width, height }} />
+      <div
+        className="spotlight-callout"
+        style={{ top: top + height + 14, left: left + width / 2 }}
+      >
+        <span className="spotlight-callout__arrow" />
+        <span className="spotlight-callout__bubble">Click and start here</span>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Light-overlay highlight (Figma node 4063:11992) — a blurred light scrim with
+ * a rounded rectangular hole cut out over the target card (via clip-path), the
+ * shiny animated border ring around it, and a dark tooltip pointing up to the
+ * card. The scrim is pointer-events:none so the card stays clickable.
+ */
+function OverlayBorderHighlight({
+  targetRef,
+}: {
+  targetRef: React.RefObject<HTMLDivElement | null>;
+}) {
+  const rect = useTrackedRect(targetRef);
+  if (!rect) return null;
+
+  const gap = 8;
+  const r = 30;
+  const x = rect.left - gap;
+  const y = rect.top - gap;
+  const w = rect.width + gap * 2;
+  const h = rect.height + gap * 2;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+
+  // Full-viewport rect with a rounded-rectangle hole (evenodd punches it out).
+  const holePath =
+    `M0 0 H${vw} V${vh} H0 Z ` +
+    `M${x + r} ${y} H${x + w - r} ` +
+    `A${r} ${r} 0 0 1 ${x + w} ${y + r} ` +
+    `V${y + h - r} ` +
+    `A${r} ${r} 0 0 1 ${x + w - r} ${y + h} ` +
+    `H${x + r} ` +
+    `A${r} ${r} 0 0 1 ${x} ${y + h - r} ` +
+    `V${y + r} ` +
+    `A${r} ${r} 0 0 1 ${x + r} ${y} Z`;
+  const clip = `path(evenodd, "${holePath}")`;
+
+  return (
+    <div className="overlay-spotlight" aria-hidden="true">
+      <div
+        className="overlay-spotlight__scrim"
+        style={{ clipPath: clip, WebkitClipPath: clip }}
+      />
+      <div
+        className="overlay-spotlight__ring"
+        style={{ top: y, left: x, width: w, height: h }}
+      />
+      <div
+        className="overlay-spotlight__tooltip"
+        style={{ top: y + h + 12, left: x + w / 2 }}
+      >
+        <span className="overlay-spotlight__tooltip-tail" />
+        <span className="overlay-spotlight__tooltip-bubble">
+          Click on your first task
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Guide-tooltip highlight (Figma node 4063:12178) — no scrim; the card keeps
+ * its shiny animated border, and a dark tooltip pops in after the page's
+ * entrance animations finish, anchored below the card with a small stem.
+ * Dismissible via its close button.
+ */
+function GuideTooltipHighlight({
+  targetRef,
+}: {
+  targetRef: React.RefObject<HTMLDivElement | null>;
+}) {
+  const rect = useTrackedRect(targetRef);
+  const [ready, setReady] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
+
+  useEffect(() => {
+    // Reveal only once the card entrance animations have settled.
+    const t = setTimeout(() => setReady(true), 800);
+    return () => clearTimeout(t);
+  }, []);
+
+  if (!rect || !ready || dismissed) return null;
+
+  return (
+    <div
+      className="guide-tooltip"
+      style={{ top: rect.bottom - 4, left: rect.left + 40 }}
+    >
+      <span className="guide-tooltip__connector">
+        <span className="guide-tooltip__dot" />
+        <span className="guide-tooltip__stem" />
+      </span>
+      <div className="guide-tooltip__box">
+        <div className="guide-tooltip__head">
+          <span className="guide-tooltip__title">Begin with the first task</span>
+          <button
+            type="button"
+            className="guide-tooltip__close"
+            onClick={() => setDismissed(true)}
+            aria-label="Dismiss tip"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M10.5759 11.423C10.6927 11.5406 10.8463 11.599 10.9999 11.599H11.0007C11.1543 11.599 11.3079 11.5398 11.4247 11.423C11.6591 11.1886 11.6591 10.8086 11.4247 10.5742L8.84954 7.99903L11.4247 5.42382C11.6591 5.18942 11.6591 4.80942 11.4247 4.57502C11.1903 4.34062 10.8103 4.34062 10.5759 4.57502L8.00057 7.15006L5.42475 4.57424C5.19035 4.33984 4.81035 4.33984 4.57595 4.57424C4.34155 4.80864 4.34155 5.18864 4.57595 5.42304L7.15171 7.9988L4.57595 10.5742C4.34155 10.8086 4.34155 11.1886 4.57595 11.423C4.69275 11.5406 4.84635 11.599 4.99995 11.599L5.00075 11.5998C5.15435 11.5998 5.30795 11.5406 5.42475 11.4238L8.00074 8.84783L10.5759 11.423Z" fill="white" fillOpacity="0.8"/>
+              </svg>
+          </button>
+        </div>
+        <p className="guide-tooltip__body">
+          They’re ordered by priority, this one matters most today.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export default function HomePage({
   userName = 'Marcos',
   onCollapsedInputClick,
@@ -716,6 +950,8 @@ export default function HomePage({
   const greeting = useMemo(() => getTimeOfDayGreeting(), []);
   const [todayTasks, setTodayTasks] = useState<Task[]>(INITIAL_TODAY_TASKS);
   const [checkInTaskId, setCheckInTaskId] = useState<string | null>(null);
+  const [highlightVersion, setHighlightVersion] = useState<HighlightVersion>('border');
+  const highlightedCardRef = useRef<HTMLDivElement | null>(null);
 
   const checkInTask = checkInTaskId
     ? todayTasks.find((t) => t.id === checkInTaskId) ?? null
@@ -816,6 +1052,12 @@ export default function HomePage({
             Home
           </span>
         </div>
+
+        {/* A/B test control — switch the "Start here" highlight style */}
+        <HighlightVersionSelect
+          value={highlightVersion}
+          onChange={setHighlightVersion}
+        />
       </div>
 
       {/* Scrollable content area — `min-h-full` wrapper with flex centers vertically when
@@ -928,6 +1170,8 @@ export default function HomePage({
                     task={task}
                     animationDelay={200 + i * 60}
                     onClick={() => handleTaskClick(task)}
+                    highlightVariant={highlightVersion}
+                    cardRef={task.highlighted ? highlightedCardRef : undefined}
                   />
                 ))}
               </div>
@@ -966,6 +1210,18 @@ export default function HomePage({
       >
         <MobileBottomChatBar onClick={onCollapsedInputClick} />
       </div>
+
+      {highlightVersion === 'spotlight' && (
+        <SpotlightHighlight targetRef={highlightedCardRef} />
+      )}
+
+      {highlightVersion === 'overlay' && (
+        <OverlayBorderHighlight targetRef={highlightedCardRef} />
+      )}
+
+      {highlightVersion === 'guide' && (
+        <GuideTooltipHighlight targetRef={highlightedCardRef} />
+      )}
 
       {checkInTask && (
         <CheckInModal

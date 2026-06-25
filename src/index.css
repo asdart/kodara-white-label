@@ -940,12 +940,275 @@ input, button, select, textarea, [contenteditable] {
     transparent 75%
   );
   animation: gradient-angle 3s linear infinite;
+  box-shadow: 0 4px 24px var(--alpha-brand-100), 0 1px 6px var(--alpha-brand-50);
 }
 
 .shiny-card > .home-task-card {
   background:
     linear-gradient(rgba(16, 104, 68, 0.08), rgba(16, 104, 68, 0.08)),
     var(--surface-primary) !important;
+  transition: background 200ms ease !important;
+}
+
+.shiny-card > .home-task-card:hover,
+.shiny-card > .home-task-card:focus-visible {
+  background:
+    linear-gradient(var(--alpha-brand-100), var(--alpha-brand-100)),
+    linear-gradient(rgba(16, 104, 68, 0.08), rgba(16, 104, 68, 0.08)),
+    var(--surface-primary) !important;
+}
+
+/* ── A/B test: spotlight highlight (alternative to the shiny border) ──
+ * Dims the whole screen and "cuts out" the highlighted card via a large
+ * box-shadow spread, then points to it with a bouncing callout. The overlay
+ * is pointer-events:none so the underlying card stays fully clickable. */
+.spotlight-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  animation: spotlight-overlay-in 220ms ease forwards;
+}
+
+@keyframes spotlight-overlay-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.spotlight-hole {
+  position: absolute;
+  border-radius: 24px;
+  box-shadow: 0 0 0 9999px rgba(8, 18, 14, 0.6);
+}
+
+.spotlight-callout {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: spotlight-callout-bounce 1.4s ease-in-out infinite;
+}
+
+@keyframes spotlight-callout-bounce {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50%      { transform: translateX(-50%) translateY(6px); }
+}
+
+.spotlight-callout__arrow {
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-bottom: 10px solid #106844;
+}
+
+.spotlight-callout__bubble {
+  background: #106844;
+  color: #ffffff;
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-family: var(--font-primary);
+  font-size: var(--body-3-size);
+  line-height: var(--body-3-line);
+  letter-spacing: var(--body-3-spacing);
+  font-weight: 500;
+  white-space: nowrap;
+  box-shadow: 0 8px 24px rgba(16, 104, 68, 0.35);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spotlight-callout {
+    animation: none;
+    transform: translateX(-50%);
+  }
+}
+
+/* ── A/B test: light overlay + animated border (Figma node 4063:11992) ──
+ * A blurred light scrim with a rounded "hole" cut out over the highlighted
+ * card (clip-path), our shiny animated border ring around it, and a dark
+ * tooltip pointing up to the card. Overlay is pointer-events:none so the
+ * underlying card stays clickable through the cut-out. */
+.overlay-spotlight {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  animation: spotlight-overlay-in 220ms ease forwards;
+}
+
+.overlay-spotlight__scrim {
+  position: absolute;
+  inset: 0;
+  background: var(--surface-overlay);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* Animated green ring — reuses the shiny-card conic gradient, drawn as a
+ * 2px frame via the mask-composite "gradient border" trick so the card shows
+ * through the transparent centre. */
+.overlay-spotlight__ring {
+  position: absolute;
+  border-radius: 30px;
+  padding: 2px;
+  background: conic-gradient(
+    from var(--gradient-angle),
+    transparent 25%,
+    #106844 50%,
+    transparent 75%
+  );
+  animation: gradient-angle 3s linear infinite;
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+}
+
+.overlay-spotlight__tooltip {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: translateX(-50%);
+}
+
+.overlay-spotlight__tooltip-tail {
+  width: 0;
+  height: 0;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-bottom: 8px solid #404040;
+}
+
+.overlay-spotlight__tooltip-bubble {
+  background: #404040;
+  color: #ffffff;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-family: var(--font-primary);
+  font-size: var(--body-3-size);
+  line-height: var(--body-3-line);
+  letter-spacing: var(--body-3-spacing);
+  font-weight: 500;
+  white-space: nowrap;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+
+/* ── A/B test: animated border + guide tooltip (Figma node 4063:12178) ──
+ * No scrim — the card keeps its shiny animated border, and a dark tooltip
+ * pops in after the page's entrance animations finish, with a thin stem
+ * connecting it up to the card. Dismissible via its close button. */
+.guide-tooltip {
+  position: fixed;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: translateX(-50%);
+  transform-origin: top center;
+  pointer-events: none;
+  animation: guide-tooltip-in 340ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes guide-tooltip-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-6px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+
+.guide-tooltip__connector {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+
+.guide-tooltip__dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #171717;
+  flex-shrink: 0;
+}
+
+.guide-tooltip__stem {
+  width: 2px;
+  height: 14px;
+  background: #171717;
+  flex-shrink: 0;
+}
+
+.guide-tooltip__box {
+  width: 251px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  border-radius: 16px;
+  background: #171717;
+  box-shadow:
+    0px 1px 0.5px rgba(0, 0, 0, 0.06),
+    0px 2px 1px rgba(0, 0, 0, 0.05),
+    0px 5px 3px rgba(0, 0, 0, 0.03),
+    0px 8px 3px rgba(0, 0, 0, 0.01);
+  pointer-events: auto;
+}
+
+.guide-tooltip__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+}
+
+.guide-tooltip__title {
+  font-family: var(--font-primary);
+  font-size: var(--body-3-size);
+  line-height: var(--body-3-line);
+  letter-spacing: var(--body-3-spacing);
+  font-weight: 500;
+  color: #ffffff;
+}
+
+.guide-tooltip__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  border: none;
+  border-radius: var(--radius-full, 999px);
+  background: rgba(255, 255, 255, 0.09);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 150ms ease;
+}
+
+.guide-tooltip__close:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.guide-tooltip__body {
+  font-family: var(--font-primary);
+  font-size: var(--body-3-size);
+  line-height: var(--body-3-line);
+  letter-spacing: var(--body-3-spacing);
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .guide-tooltip {
+    animation: none;
+    transform: translateX(-50%);
+  }
 }
 
 .home-task-card.home-task-card--highlighted {
