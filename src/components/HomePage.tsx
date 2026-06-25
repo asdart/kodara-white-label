@@ -880,20 +880,29 @@ function OverlayBorderHighlight({ steps }: { steps: TourStep[] }) {
 
   const isLast = step >= steps.length - 1;
 
-  const handleNext = () => {
-    if (isLast) {
-      setDismissed(true);
-      return;
-    }
+  const goToStep = (next: number) => {
     setTooltipShown(false); // fade out
     window.setTimeout(() => {
       setSliding(true);
-      setStep((s) => s + 1); // mask slides to the next target
+      setStep(next); // mask slides to the target
     }, 200);
     window.setTimeout(() => {
       setTooltipShown(true); // fade in with new copy/position
       setSliding(false);
     }, 200 + 550);
+  };
+
+  const handleNext = () => {
+    if (isLast) {
+      setDismissed(true);
+      return;
+    }
+    goToStep(step + 1);
+  };
+
+  const handleBack = () => {
+    if (step === 0) return;
+    goToStep(step - 1);
   };
 
   if (!rect || dismissed) return null;
@@ -949,10 +958,12 @@ function OverlayBorderHighlight({ steps }: { steps: TourStep[] }) {
               step={step}
               total={steps.length}
               isLast={isLast}
+              canBack={step > 0}
               title={current.title}
               body={current.body}
               onClose={() => setDismissed(true)}
               onNext={handleNext}
+              onBack={handleBack}
             />
           </div>
         )}
@@ -975,10 +986,12 @@ function OverlayBorderHighlight({ steps }: { steps: TourStep[] }) {
               step={step}
               total={steps.length}
               isLast={isLast}
+              canBack={step > 0}
               title={current.title}
               body={current.body}
               onClose={() => setDismissed(true)}
               onNext={handleNext}
+              onBack={handleBack}
             />
           </div>
         )}
@@ -991,18 +1004,22 @@ function TourTooltipBody({
   step,
   total,
   isLast,
+  canBack,
   title,
   body,
   onClose,
   onNext,
+  onBack,
 }: {
   step: number;
   total: number;
   isLast: boolean;
+  canBack: boolean;
   title: string;
   body: string;
   onClose: () => void;
   onNext: () => void;
+  onBack: () => void;
 }) {
   return (
     <>
@@ -1024,9 +1041,16 @@ function TourTooltipBody({
         <span className="guide-tooltip__counter">
           Tip {step + 1} of {total}
         </span>
-        <button type="button" className="guide-tooltip__next" onClick={onNext}>
-          {isLast ? 'Done' : 'Next'}
-        </button>
+        <div className="guide-tooltip__actions">
+          {canBack && (
+            <button type="button" className="guide-tooltip__back" onClick={onBack}>
+              Back
+            </button>
+          )}
+          <button type="button" className="guide-tooltip__next" onClick={onNext}>
+            {isLast ? 'Done' : 'Next'}
+          </button>
+        </div>
       </div>
     </>
   );

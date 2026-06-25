@@ -1238,6 +1238,38 @@ input, button, select, textarea, [contenteditable] {
   filter: brightness(0.97);
 }
 
+.guide-tooltip__actions {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Less prominent "Back" — text-only, sits to the left of the Next button. */
+.guide-tooltip__back {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 10px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  font-family: var(--font-primary);
+  font-size: var(--body-3-size);
+  line-height: var(--body-3-line);
+  letter-spacing: var(--body-3-spacing);
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.6);
+  transition: color 150ms ease, background 150ms ease;
+}
+
+.guide-tooltip__back:hover {
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.08);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .guide-tooltip {
     animation: none;
