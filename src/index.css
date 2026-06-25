@@ -1071,37 +1071,6 @@ input, button, select, textarea, [contenteditable] {
           mask-composite: exclude;
 }
 
-.overlay-spotlight__tooltip {
-  position: fixed;
-  z-index: 62;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  transform: translateX(-50%);
-}
-
-.overlay-spotlight__tooltip-tail {
-  width: 0;
-  height: 0;
-  border-left: 7px solid transparent;
-  border-right: 7px solid transparent;
-  border-bottom: 8px solid #404040;
-}
-
-.overlay-spotlight__tooltip-bubble {
-  background: #404040;
-  color: #ffffff;
-  padding: 10px 16px;
-  border-radius: 10px;
-  font-family: var(--font-primary);
-  font-size: var(--body-3-size);
-  line-height: var(--body-3-line);
-  letter-spacing: var(--body-3-spacing);
-  font-weight: 500;
-  white-space: nowrap;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
-}
-
 /* ── A/B test: animated border + guide tooltip (Figma node 4063:12178) ──
  * No scrim — the card keeps its shiny animated border, and a dark tooltip
  * pops in after the page's entrance animations finish, with a thin stem
@@ -1116,6 +1085,13 @@ input, button, select, textarea, [contenteditable] {
   transform-origin: top center;
   pointer-events: none;
   animation: guide-tooltip-in 340ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Tour variant — opacity-controlled fade in/out instead of the pop-in keyframe,
+ * so stepping between targets cross-fades the tooltip in place. */
+.guide-tooltip--tour {
+  animation: none;
+  transition: opacity 200ms ease;
 }
 
 @keyframes guide-tooltip-in {
@@ -1155,7 +1131,7 @@ input, button, select, textarea, [contenteditable] {
   width: 251px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
   padding: 12px;
   border-radius: 16px;
   background: #171717;
@@ -1165,6 +1141,14 @@ input, button, select, textarea, [contenteditable] {
     0px 5px 3px rgba(0, 0, 0, 0.03),
     0px 8px 3px rgba(0, 0, 0, 0.01);
   pointer-events: auto;
+}
+
+.guide-tooltip__content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  width: 100%;
 }
 
 .guide-tooltip__head {
@@ -1209,6 +1193,49 @@ input, button, select, textarea, [contenteditable] {
   font-weight: 500;
   color: rgba(255, 255, 255, 0.6);
   margin: 0;
+}
+
+/* Tour controls footer — "Tip X of N" counter + Next button (node 4079:12019) */
+.guide-tooltip__controls {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+}
+
+.guide-tooltip__counter {
+  flex: 1 0 0;
+  min-width: 0;
+  margin: 0;
+  font-family: var(--font-primary);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.guide-tooltip__next {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--alpha-light-100);
+  background: linear-gradient(180deg, var(--color-neutral-50) 0%, #f5f5f5 100%);
+  cursor: pointer;
+  font-family: var(--font-primary);
+  font-size: var(--body-3-size);
+  line-height: var(--body-3-line);
+  letter-spacing: var(--body-3-spacing);
+  font-weight: 500;
+  color: var(--alpha-light-600);
+  transition: filter 150ms ease;
+}
+
+.guide-tooltip__next:hover {
+  filter: brightness(0.97);
 }
 
 @media (prefers-reduced-motion: reduce) {

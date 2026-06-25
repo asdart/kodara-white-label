@@ -826,19 +826,77 @@ function SpotlightHighlight({
   );
 }
 
+interface TourStep {
+  getRect: () => DOMRect | null;
+  title: string;
+  body: string;
+}
+
 /**
- * Light-overlay highlight (Figma node 4063:11992) — a blurred light scrim with
- * a rounded rectangular hole cut out over the target card (via clip-path), the
- * shiny animated border ring around it, and a dark tooltip pointing up to the
- * card. The scrim is pointer-events:none so the card stays clickable.
+ * Light-overlay guided tour (Figma nodes 4063:11992 / 4079:12019) — a blurred
+ * light scrim with a rounded hole over the current target, the shiny animated
+ * border ring around it, and a dark tooltip with tour controls. Clicking
+ * "Next" slides the mask to the following target while the tooltip fades out
+ * and back in with new copy. The scrim panels block interaction everywhere
+ * except the highlighted region.
  */
-function OverlayBorderHighlight({
-  targetRef,
-}: {
-  targetRef: React.RefObject<HTMLDivElement | null>;
-}) {
-  const rect = useTrackedRect(targetRef);
-  if (!rect) return null;
+function OverlayBorderHighlight({ steps }: { steps: TourStep[] }) {
+  const [step, setStep] = useState(0);
+  const [dismissed, setDismissed] = useState(false);
+  const [sliding, setSliding] = useState(false);
+  const [tooltipShown, setTooltipShown] = useState(false);
+  const [rect, setRect] = useState<DOMRect | null>(null);
+
+  const stepRef = useRef(step);
+  stepRef.current = step;
+  const stepsRef = useRef(steps);
+  stepsRef.current = steps;
+
+  // Track the current step's target rect every frame so the mask stays glued
+  // to it during scrolling and slides smoothly when the step changes.
+  useEffect(() => {
+    let raf = 0;
+    let prevKey = '';
+    const tick = () => {
+      const r = stepsRef.current[stepRef.current]?.getRect();
+      if (r) {
+        const key = `${r.top}|${r.left}|${r.width}|${r.height}`;
+        if (key !== prevKey) {
+          prevKey = key;
+          setRect(r);
+        }
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  // Fade the tooltip in shortly after mount.
+  useEffect(() => {
+    const t = setTimeout(() => setTooltipShown(true), 60);
+    return () => clearTimeout(t);
+  }, []);
+
+  const isLast = step >= steps.length - 1;
+
+  const handleNext = () => {
+    if (isLast) {
+      setDismissed(true);
+      return;
+    }
+    setTooltipShown(false); // fade out
+    window.setTimeout(() => {
+      setSliding(true);
+      setStep((s) => s + 1); // mask slides to the next target
+    }, 200);
+    window.setTimeout(() => {
+      setTooltipShown(true); // fade in with new copy/position
+      setSliding(false);
+    }, 200 + 550);
+  };
+
+  if (!rect || dismissed) return null;
 
   const gap = 8;
   const x = rect.left - gap;
@@ -846,36 +904,129 @@ function OverlayBorderHighlight({
   const w = rect.width + gap * 2;
   const h = rect.height + gap * 2;
 
-  // Panels are rendered as top-level fixed elements (not wrapped in an
-  // opacity-animated container) so that backdrop-filter is never trapped
-  // inside an isolated compositing layer.
+  const slide = sliding
+    ? 'top 550ms cubic-bezier(0.4,0,0.2,1), left 550ms cubic-bezier(0.4,0,0.2,1), width 550ms cubic-bezier(0.4,0,0.2,1), height 550ms cubic-bezier(0.4,0,0.2,1), right 550ms cubic-bezier(0.4,0,0.2,1), bottom 550ms cubic-bezier(0.4,0,0.2,1)'
+    : 'none';
+
+  // Place the tooltip below the region, or above it when there isn't enough
+  // room below (e.g. the bottom chat input).
+  const placeBelow = y + h + 170 < window.innerHeight;
+  const anchorX = step === 0 ? rect.left + 40 : rect.left + rect.width / 2;
+  const current = steps[step];
+
   return (
     <>
       {/* Top */}
-      <div aria-hidden className="overlay-panel" style={{ top: 0, left: 0, right: 0, height: y }} />
+      <div aria-hidden className="overlay-panel" style={{ top: 0, left: 0, right: 0, height: y, transition: slide }} />
       {/* Bottom */}
-      <div aria-hidden className="overlay-panel" style={{ top: y + h, left: 0, right: 0, bottom: 0 }} />
+      <div aria-hidden className="overlay-panel" style={{ top: y + h, left: 0, right: 0, bottom: 0, transition: slide }} />
       {/* Left */}
-      <div aria-hidden className="overlay-panel" style={{ top: y, left: 0, width: x, height: h }} />
+      <div aria-hidden className="overlay-panel" style={{ top: y, left: 0, width: x, height: h, transition: slide }} />
       {/* Right */}
-      <div aria-hidden className="overlay-panel" style={{ top: y, left: x + w, right: 0, height: h }} />
+      <div aria-hidden className="overlay-panel" style={{ top: y, left: x + w, right: 0, height: h, transition: slide }} />
 
       {/* Animated border ring */}
       <div
         aria-hidden
         className="overlay-spotlight__ring"
-        style={{ top: y, left: x, width: w, height: h }}
+        style={{ top: y, left: x, width: w, height: h, transition: slide }}
       />
 
-      {/* Tooltip */}
+      {/* Tooltip — guide style with tour controls (Figma node 4079:12019) */}
       <div
-        className="overlay-spotlight__tooltip"
-        style={{ top: y + h + 12, left: x + w / 2 }}
+        className="guide-tooltip guide-tooltip--tour"
+        style={{
+          top: placeBelow ? y + h - 4 : y + 4,
+          left: anchorX,
+          transform: placeBelow ? 'translateX(-50%)' : 'translate(-50%, -100%)',
+          opacity: tooltipShown ? 1 : 0,
+          zIndex: 62,
+        }}
       >
-        <span className="overlay-spotlight__tooltip-tail" />
-        <span className="overlay-spotlight__tooltip-bubble">
-          Click on your first task
+        {!placeBelow && (
+          <div className="guide-tooltip__box">
+            <TourTooltipBody
+              step={step}
+              total={steps.length}
+              isLast={isLast}
+              title={current.title}
+              body={current.body}
+              onClose={() => setDismissed(true)}
+              onNext={handleNext}
+            />
+          </div>
+        )}
+        <span className={`guide-tooltip__connector${placeBelow ? '' : ' guide-tooltip__connector--down'}`}>
+          {placeBelow ? (
+            <>
+              <span className="guide-tooltip__dot" />
+              <span className="guide-tooltip__stem" />
+            </>
+          ) : (
+            <>
+              <span className="guide-tooltip__stem" />
+              <span className="guide-tooltip__dot" />
+            </>
+          )}
         </span>
+        {placeBelow && (
+          <div className="guide-tooltip__box">
+            <TourTooltipBody
+              step={step}
+              total={steps.length}
+              isLast={isLast}
+              title={current.title}
+              body={current.body}
+              onClose={() => setDismissed(true)}
+              onNext={handleNext}
+            />
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
+function TourTooltipBody({
+  step,
+  total,
+  isLast,
+  title,
+  body,
+  onClose,
+  onNext,
+}: {
+  step: number;
+  total: number;
+  isLast: boolean;
+  title: string;
+  body: string;
+  onClose: () => void;
+  onNext: () => void;
+}) {
+  return (
+    <>
+      <div className="guide-tooltip__content">
+        <div className="guide-tooltip__head">
+          <span className="guide-tooltip__title">{title}</span>
+          <button
+            type="button"
+            className="guide-tooltip__close"
+            onClick={onClose}
+            aria-label="Dismiss tip"
+          >
+            <TipCloseIcon />
+          </button>
+        </div>
+        <p className="guide-tooltip__body">{body}</p>
+      </div>
+      <div className="guide-tooltip__controls">
+        <span className="guide-tooltip__counter">
+          Tip {step + 1} of {total}
+        </span>
+        <button type="button" className="guide-tooltip__next" onClick={onNext}>
+          {isLast ? 'Done' : 'Next'}
+        </button>
       </div>
     </>
   );
@@ -887,6 +1038,14 @@ function OverlayBorderHighlight({
  * entrance animations finish, anchored below the card with a small stem.
  * Dismissible via its close button.
  */
+function TipCloseIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <path d="M10.5759 11.423C10.6927 11.5406 10.8463 11.599 10.9999 11.599H11.0007C11.1543 11.599 11.3079 11.5398 11.4247 11.423C11.6591 11.1886 11.6591 10.8086 11.4247 10.5742L8.84954 7.99903L11.4247 5.42382C11.6591 5.18942 11.6591 4.80942 11.4247 4.57502C11.1903 4.34062 10.8103 4.34062 10.5759 4.57502L8.00057 7.15006L5.42475 4.57424C5.19035 4.33984 4.81035 4.33984 4.57595 4.57424C4.34155 4.80864 4.34155 5.18864 4.57595 5.42304L7.15171 7.9988L4.57595 10.5742C4.34155 10.8086 4.34155 11.1886 4.57595 11.423C4.69275 11.5406 4.84635 11.599 4.99995 11.599L5.00075 11.5998C5.15435 11.5998 5.30795 11.5406 5.42475 11.4238L8.00074 8.84783L10.5759 11.423Z" fill="white" fillOpacity="0.8" />
+    </svg>
+  );
+}
+
 function GuideTooltipHighlight({
   targetRef,
 }: {
@@ -914,22 +1073,22 @@ function GuideTooltipHighlight({
         <span className="guide-tooltip__stem" />
       </span>
       <div className="guide-tooltip__box">
-        <div className="guide-tooltip__head">
-          <span className="guide-tooltip__title">Begin with the first task</span>
-          <button
-            type="button"
-            className="guide-tooltip__close"
-            onClick={() => setDismissed(true)}
-            aria-label="Dismiss tip"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M10.5759 11.423C10.6927 11.5406 10.8463 11.599 10.9999 11.599H11.0007C11.1543 11.599 11.3079 11.5398 11.4247 11.423C11.6591 11.1886 11.6591 10.8086 11.4247 10.5742L8.84954 7.99903L11.4247 5.42382C11.6591 5.18942 11.6591 4.80942 11.4247 4.57502C11.1903 4.34062 10.8103 4.34062 10.5759 4.57502L8.00057 7.15006L5.42475 4.57424C5.19035 4.33984 4.81035 4.33984 4.57595 4.57424C4.34155 4.80864 4.34155 5.18864 4.57595 5.42304L7.15171 7.9988L4.57595 10.5742C4.34155 10.8086 4.34155 11.1886 4.57595 11.423C4.69275 11.5406 4.84635 11.599 4.99995 11.599L5.00075 11.5998C5.15435 11.5998 5.30795 11.5406 5.42475 11.4238L8.00074 8.84783L10.5759 11.423Z" fill="white" fillOpacity="0.8"/>
-              </svg>
-          </button>
+        <div className="guide-tooltip__content">
+          <div className="guide-tooltip__head">
+            <span className="guide-tooltip__title">Begin with the first task</span>
+            <button
+              type="button"
+              className="guide-tooltip__close"
+              onClick={() => setDismissed(true)}
+              aria-label="Dismiss tip"
+            >
+              <TipCloseIcon />
+            </button>
+          </div>
+          <p className="guide-tooltip__body">
+            They’re ordered by priority, this one matters most today.
+          </p>
         </div>
-        <p className="guide-tooltip__body">
-          They’re ordered by priority, this one matters most today.
-        </p>
       </div>
     </div>
   );
@@ -948,6 +1107,41 @@ export default function HomePage({
   const [checkInTaskId, setCheckInTaskId] = useState<string | null>(null);
   const [highlightVersion, setHighlightVersion] = useState<HighlightVersion>('border');
   const highlightedCardRef = useRef<HTMLDivElement | null>(null);
+  const secondTaskRef = useRef<HTMLDivElement | null>(null);
+  const thirdTaskRef = useRef<HTMLDivElement | null>(null);
+  const bottomInputRef = useRef<HTMLDivElement | null>(null);
+
+  // Steps for the "Light overlay + border" guided tour: first task → the two
+  // follow-up tasks together → the chat input. Each has its own copy.
+  const overlayTourSteps = useMemo<TourStep[]>(
+    () => [
+      {
+        getRect: () => highlightedCardRef.current?.getBoundingClientRect() ?? null,
+        title: 'Begin with the first task',
+        body: 'They’re ordered by priority, this one matters most today.',
+      },
+      {
+        getRect: () => {
+          const a = secondTaskRef.current?.getBoundingClientRect();
+          const b = thirdTaskRef.current?.getBoundingClientRect();
+          if (!a || !b) return a ?? b ?? null;
+          const left = Math.min(a.left, b.left);
+          const top = Math.min(a.top, b.top);
+          const right = Math.max(a.right, b.right);
+          const bottom = Math.max(a.bottom, b.bottom);
+          return new DOMRect(left, top, right - left, bottom - top);
+        },
+        title: 'Then keep your momentum',
+        body: 'Tackle these next — each one builds on the work above.',
+      },
+      {
+        getRect: () => bottomInputRef.current?.getBoundingClientRect() ?? null,
+        title: 'Ask anything, anytime',
+        body: 'Use the chat to get help, brainstorm ideas, or start a new task.',
+      },
+    ],
+    [],
+  );
 
   const checkInTask = checkInTaskId
     ? todayTasks.find((t) => t.id === checkInTaskId) ?? null
@@ -1162,7 +1356,15 @@ export default function HomePage({
                     animationDelay={200 + i * 60}
                     onClick={() => handleTaskClick(task)}
                     highlightVariant={highlightVersion}
-                    cardRef={task.highlighted ? highlightedCardRef : undefined}
+                    cardRef={
+                      task.highlighted
+                        ? highlightedCardRef
+                        : i === 1
+                          ? secondTaskRef
+                          : i === 2
+                            ? thirdTaskRef
+                            : undefined
+                    }
                   />
                 ))}
               </div>
@@ -1184,7 +1386,7 @@ export default function HomePage({
           animationDelay: '300ms',
         }}
       >
-        <div className="w-full mx-auto" style={{ maxWidth: '704px' }}>
+        <div ref={bottomInputRef} className="w-full mx-auto" style={{ maxWidth: '704px' }}>
           <CollapsedChatInput onClick={onCollapsedInputClick} />
         </div>
       </div>
@@ -1222,7 +1424,7 @@ export default function HomePage({
       )}
 
       {highlightVersion === 'overlay' && (
-        <OverlayBorderHighlight targetRef={highlightedCardRef} />
+        <OverlayBorderHighlight steps={overlayTourSteps} />
       )}
 
       {highlightVersion === 'guide' && (
